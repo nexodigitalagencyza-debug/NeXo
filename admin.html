@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NeXo | Admin Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg-dark: #080808; --bg-card: #121212; --bv-green: #008040; --text-cream: #f4f1ea; --text-muted: #888888; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -11,7 +12,6 @@
         .container { max-width: 800px; margin: 0 auto; background: #121212; padding: 20px; border-radius: 8px; border: 1px solid #333; }
         h2 { text-align: center; color: var(--bv-green); margin-bottom: 20px; }
         
-        /* TABS */
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
         .tab-btn { background: none; border: none; color: var(--text-muted); font-size: 1rem; cursor: pointer; padding: 10px; transition: 0.3s; font-weight: bold; }
         .tab-btn.active { color: var(--bv-green); border-bottom: 2px solid var(--bv-green); }
@@ -19,16 +19,17 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* DASHBOARD STYLES */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
         .stat-card { background: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px solid #333; }
         .stat-card h4 { color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; margin-bottom: 5px; }
         .stat-card .value { font-size: 1.5rem; font-weight: bold; color: var(--bv-green); }
         
+        .chart-container { background: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 30px; height: 250px; position: relative; }
+        .chart-title { color: var(--text-cream); font-size: 0.9rem; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+
         .sales-list { margin-top: 20px; }
         .sale-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; font-size: 0.9rem; }
 
-        /* FORM STYLES */
         label { display: block; margin-bottom: 5px; font-size: 0.85rem; color: var(--text-muted); }
         input, select, textarea { width: 100%; padding: 12px; margin-bottom: 15px; background: transparent; border: 1px solid #444; color: white; border-radius: 4px; font-family: sans-serif; }
         textarea { resize: vertical; height: 80px; }
@@ -41,12 +42,13 @@
         .checkbox-group label { display: flex; align-items: center; gap: 5px; font-size: 0.85rem; cursor: pointer; background: #222; padding: 8px 12px; border-radius: 4px; }
         .checkbox-group input { width: auto; margin: 0; }
 
-        /* DRAFT LIST */
         .draft-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #222; background: #0d0d0d; margin-bottom: 5px; border-radius: 4px; }
         .draft-actions { display: flex; gap: 5px; }
         .btn-small { padding: 5px 10px; font-size: 0.75rem; width: auto; margin: 0; }
         .btn-danger { background: #ff4d4d; }
         .btn-danger:hover { background: #cc0000; }
+
+        .product-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; }
 
         .luxury-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background-color: var(--bv-green); color: #ffffff; padding: 16px 30px; border-radius: 12px; font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 500; letter-spacing: 1px; box-shadow: 0 10px 30px rgba(0, 128, 64, 0.3); z-index: 100000; opacity: 0; transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); text-align: center; pointer-events: none; }
         .luxury-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
@@ -93,8 +95,13 @@
                     <div class="value" id="revenue7d">R 0.00</div>
                 </div>
             </div>
+
+            <div class="chart-container">
+                <div class="chart-title">Revenue Performance</div>
+                <canvas id="salesChart"></canvas>
+            </div>
             
-            <h3>Product Sales Breakdown</h3>
+            <h3>Recent Orders Breakdown</h3>
             <div class="sales-list" id="productSalesList">
                 <p style="color: var(--text-muted); font-size: 0.85rem;">Loading sales data...</p>
             </div>
@@ -163,7 +170,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDc8RBSOsqaE2pt6Mu3ArKcTGHKf3z-vIs",
@@ -181,6 +188,7 @@
         const db = getFirestore(app);
 
         let currentDrafts = JSON.parse(localStorage.getItem('nexoDrafts')) || [];
+        let myChart = null;
 
         const sizeChart = {
             clothing: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
@@ -234,21 +242,99 @@
             }
         };
 
-        // --- DASHBOARD LOGIC ---
+        // --- DASHBOARD LOGIC & CHART ---
         async function loadDashboard() {
-            // In a real app, this data comes from completed orders. 
-            // For now, let's simulate it based on your sales. 
-            // You can connect this to a 'orders' collection later.
-            document.getElementById('totalRevenue').innerText = `R 0.00`;
-            document.getElementById('totalSales').innerText = `0`;
-            document.getElementById('revenue24h').innerText = `R 0.00`;
-            document.getElementById('revenue7d').innerText = `R 0.00`;
+            const querySnapshot = await getDocs(collection(db, "orders"));
+            let totalRev = 0;
+            let totalSales = 0;
+            let rev24h = 0;
+            let rev7d = 0;
             
-            // Example of how it will look when you have sales:
-            document.getElementById('productSalesList').innerHTML = `
-                <div class="sale-item"><span>All The Stars Hoodie (Size L)</span> <span>R 350.00</span></div>
-                <div class="sale-item"><span>Chris Brown Graphic Tee (Size M)</span> <span>R 250.00</span></div>
-            `;
+            const now = new Date();
+            const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+            const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+
+            // Array for the chart data (Last 7 days)
+            const chartLabels = [];
+            const chartData = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(now.getTime() - (i * 24 * 60 * 60 * 1000));
+                chartLabels.push(d.toLocaleDateString('en-ZA', { weekday: 'short' }));
+                chartData.push(0);
+            }
+
+            const salesList = document.getElementById('productSalesList');
+            salesList.innerHTML = '';
+
+            if (querySnapshot.empty) {
+                salesList.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">No sales recorded yet.</p>';
+            } else {
+                querySnapshot.forEach((docSnap) => {
+                    const order = docSnap.data();
+                    const orderDate = new Date(order.date);
+                    
+                    totalRev += order.total;
+                    totalSales += 1;
+
+                    if (orderDate >= oneDayAgo) rev24h += order.total;
+                    if (orderDate >= sevenDaysAgo) {
+                        rev7d += order.total;
+                        
+                        // Find which day index it belongs to (0 to 6)
+                        const dayDiff = Math.floor((now - orderDate) / (1000 * 60 * 60 * 24));
+                        if (dayDiff >= 0 && dayDiff < 7) {
+                            chartData[6 - dayDiff] += order.total;
+                        }
+                    }
+
+                    // Add to list
+                    const itemTitles = order.items.map(i => `${i.title} (x${i.quantity})`).join(', ');
+                    salesList.innerHTML += `
+                        <div class="sale-item">
+                            <span>${itemTitles}</span>
+                            <span>R ${order.total.toFixed(2)}</span>
+                        </div>
+                    `;
+                });
+            }
+
+            // Update Numbers
+            document.getElementById('totalRevenue').innerText = `R ${totalRev.toFixed(2)}`;
+            document.getElementById('totalSales').innerText = totalSales;
+            document.getElementById('revenue24h').innerText = `R ${rev24h.toFixed(2)}`;
+            document.getElementById('revenue7d').innerText = `R ${rev7d.toFixed(2)}`;
+
+            // Update Chart
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            if (myChart) { myChart.destroy(); }
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Revenue (R)',
+                        data: chartData,
+                        borderColor: '#008040',
+                        backgroundColor: 'rgba(0, 128, 64, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#f4f1ea',
+                        pointBorderColor: '#008040',
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#888888' } },
+                        y: { beginAtZero: true, grid: { color: '#222222' }, ticks: { color: '#888888' } }
+                    }
+                }
+            });
         }
 
         // --- DRAFT LOGIC ---
@@ -295,7 +381,7 @@
             const price = parseFloat(document.getElementById('prodPrice').value);
             const oldPrice = document.getElementById('prodOldPrice').value ? parseFloat(document.getElementById('prodOldPrice').value) : null;
             const thumbIndex = parseInt(document.getElementById('thumbnailIndex').value);
-            const file = document.getElementById('prodImages').files[0]; // Just take first image for draft simplicity
+            const file = document.getElementById('prodImages').files[0]; 
 
             if (!title || !price || !file) { showToast("Title, Price, and Image are required for a draft."); return; }
 
@@ -324,7 +410,6 @@
             
             try {
                 for (let draft of currentDrafts) {
-                    // 1. Upload Image to Cloudinary
                     const formData = new FormData();
                     formData.append('file', draft.file);
                     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
@@ -337,7 +422,6 @@
                     const data = await response.json();
                     const imageUrl = data.secure_url;
 
-                    // 2. Save to Firebase
                     await addDoc(collection(db, "products"), {
                         title: draft.title, description: draft.description, category: draft.category, 
                         price: draft.price, oldPrice: draft.oldPrice, sizes: draft.sizes, 
@@ -444,7 +528,6 @@
             updateSizeOptions();
         };
 
-        // Initialize Draft Section on Load
         renderDrafts();
     </script>
 </body>
