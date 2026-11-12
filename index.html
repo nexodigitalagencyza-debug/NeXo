@@ -29,9 +29,12 @@
         .header-icons svg:hover { fill: var(--bv-green); }
         .cart-count { background: var(--bv-green); color: #fff; font-size: 0.65rem; font-weight: bold; border-radius: 50%; padding: 2px 6px; position: absolute; top: -8px; right: -10px; }
 
-        .search-container { padding: 0 20px 10px; }
-        .search-input { width: 100%; padding: 12px 15px; background: transparent; border: 1px solid #333; color: var(--text-cream); border-radius: 4px; font-family: 'Inter', sans-serif; outline: none; }
+        .search-container { padding: 0 20px 10px; display: flex; gap: 10px; }
+        .search-input { flex: 1; padding: 12px 15px; background: transparent; border: 1px solid #333; color: var(--text-cream); border-radius: 4px; font-family: 'Inter', sans-serif; outline: none; font-size: 0.85rem; }
         .search-input:focus { border-color: var(--bv-green); }
+        .search-btn { background: var(--bv-green); border: none; color: white; padding: 0 20px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .search-btn:hover { background: #006633; }
+        .search-btn svg { width: 18px; height: 18px; fill: white; }
 
         .category-nav { display: flex; justify-content: flex-start; gap: 20px; padding: 12px 20px; overflow-x: auto; white-space: nowrap; border-top: 1px solid #1a1a1a; }
         .category-nav::-webkit-scrollbar { display: none; }
@@ -43,12 +46,8 @@
         .page-view.active { display: block; animation: fadeIn 0.4s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .section-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; padding: 20px 20px 10px; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #1a1a1a; margin-bottom: 15px; }
+        .section-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; padding: 20px 20px 10px; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #1a1a1a; margin-bottom: 15px; text-align: center; }
         
-        .sub-category-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 20px 30px; }
-        .sub-category-item { font-size: 0.85rem; color: var(--text-muted); padding: 10px; background: #121212; border: 1px solid #222; border-radius: 4px; text-align: center; transition: 0.3s; cursor: pointer; }
-        .sub-category-item:hover { border-color: var(--bv-green); color: var(--text-cream); }
-
         .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 15px; }
         .feature-card { grid-column: span 2; }
         .product-card { text-align: left; position: relative; display: block; }
@@ -202,7 +201,10 @@
         </header>
 
         <div class="search-container">
-            <input type="text" id="searchBar" class="search-input" placeholder="Search for products..." oninput="searchProducts()">
+            <input type="text" id="searchBar" class="search-input" placeholder="Search for products..." onkeypress="handleSearch(event)">
+            <button class="search-btn" onclick="searchProducts()">
+                <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            </button>
         </div>
 
         <nav class="category-nav">
@@ -216,7 +218,10 @@
     </div>
 
     <div id="view-home" class="page-view active">
-        <main id="categoryContent"></main>
+        <main id="categoryContent">
+            <h2 class="section-title" id="homeTitle">ALL PRODUCTS</h2>
+            <div class="product-grid" id="mainProductGrid"></div>
+        </main>
     </div>
 
     <div id="view-product" class="page-view">
@@ -353,7 +358,6 @@
         <div class="footer-bottom"><p>&copy; 2024 NEXO. ALL RIGHTS RESERVED.</p></div>
     </footer>
 
-    <!-- UI LOGIC SCRIPT (Clickable Menus & Modals) -->
     <script>
         function toggleMenu() {
             document.getElementById('sideMenu').classList.toggle('open');
@@ -383,9 +387,14 @@
             if (pageId === 'home') renderHome();
             if (pageId === 'cart') renderCart();
         }
+
+        function handleSearch(event) {
+            if (event.key === 'Enter') {
+                searchProducts();
+            }
+        }
     </script>
 
-    <!-- DATA LOGIC SCRIPT (Firebase & Cart) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
@@ -407,76 +416,31 @@
         let selectedSize = null;
         let cart = JSON.parse(localStorage.getItem('nexoCart')) || [];
 
-        const categoryStructure = {
-            "Tops": ["T-Shirts", "Shirts & Blouses", "Hoodies & Sweatshirts", "Sweaters & Knitwear", "Tank Tops", "Polos"],
-            "Bottoms": ["Sweatpants & Joggers", "Jeans", "Trousers & Chinos", "Shorts", "Skirts", "Leggings"],
-            "Outerwear": ["Jackets", "Coats", "Blazers", "Bombers", "Vests"],
-            "Dresses & Suits": ["Dresses", "Suits & Sets", "Jumpsuits"],
-            "Footwear": ["Sneakers", "Boots", "Sandals & Slides", "Formal Shoes"],
-            "Accessories": ["Bags & Backpacks", "Hats & Caps", "Belts", "Sunglasses", "Jewelry", "Scarves & Gloves", "Socks"],
-            "Activewear": ["Sports Tops", "Sports Bottoms", "Matching Sets"],
-            "Underwear & Sleepwear": ["Underwear", "Bras", "Sleepwear & Loungewear"],
-            "Shop By Collection": ["New Arrivals", "Best Sellers", "Sale", "Streetwear", "Essentials/Basics"]
-        };
-
         async function fetchProducts() {
             const querySnapshot = await getDocs(collection(db, "products"));
             products = [];
             querySnapshot.forEach((doc) => {
                 products.push({ id: doc.id, ...doc.data() });
             });
+            // Sort so the newest uploaded product is always first
+            products.sort((a, b) => (b.id > a.id ? 1 : -1));
             renderHome();
         }
 
         window.renderHome = function() {
-            const container = document.getElementById('categoryContent');
-            container.innerHTML = '';
-            
-            Object.keys(categoryStructure).forEach(mainCat => {
-                const section = document.createElement('div');
-                section.innerHTML = `<h2 class="section-title">${mainCat}</h2>
-                                     <div class="sub-category-grid" id="cat-${mainCat.replace(/\s/g, '')}"></div>`;
-                container.appendChild(section);
-
-                const grid = section.querySelector('.sub-category-grid');
-                categoryStructure[mainCat].forEach(subCat => {
-                    const item = document.createElement('div');
-                    item.className = 'sub-category-item';
-                    item.innerText = subCat;
-                    item.onclick = () => {
-                        document.getElementById('searchBar').value = subCat;
-                        searchProducts();
-                    };
-                    grid.appendChild(item);
-                });
-            });
-
-            const allProductsTitle = document.createElement('h2');
-            allProductsTitle.className = 'section-title';
-            allProductsTitle.innerText = 'ALL PRODUCTS';
-            container.appendChild(allProductsTitle);
-
-            const productGrid = document.createElement('div');
-            productGrid.className = 'product-grid';
-            productGrid.id = 'mainProductGrid';
-            container.appendChild(productGrid);
-            
-            window.renderProductsToGrid(products);
-        }
-
-        window.renderProductsToGrid = function(productList) {
             const grid = document.getElementById('mainProductGrid');
             if(!grid) return;
             grid.innerHTML = '';
-            
-            if (productList.length === 0) {
+
+            if (products.length === 0) {
                 grid.innerHTML = '<p style="grid-column: span 2; text-align:center; color:#888; padding: 20px;">No products found.</p>';
                 return;
             }
 
-            productList.forEach(p => {
+            products.forEach((p, index) => {
                 const card = document.createElement('div');
-                card.className = p.feature ? 'product-card feature-card' : 'product-card';
+                // Make the very first (newest) item big
+                card.className = index === 0 ? 'product-card feature-card' : 'product-card';
                 card.onclick = () => showProduct(p.id);
                 
                 const priceHTML = p.oldPrice 
@@ -485,7 +449,7 @@
 
                 card.innerHTML = `
                     <div class="image-container">
-                        ${p.feature ? '<span class="badge">NEW DROP</span>' : ''}
+                        ${index === 0 ? '<span class="badge">NEW DROP</span>' : ''}
                         <img src="${p.image}" alt="${p.title}">
                     </div>
                     <div class="product-info">
@@ -503,7 +467,38 @@
                 p.title.toLowerCase().includes(query) || 
                 (p.category && p.category.toLowerCase().includes(query))
             );
-            window.renderProductsToGrid(filtered);
+            
+            document.getElementById('homeTitle').innerText = `Search Results: ${query}`;
+            document.querySelectorAll('.category-nav a').forEach(a => a.classList.remove('active'));
+            
+            const grid = document.getElementById('mainProductGrid');
+            grid.innerHTML = '';
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<p style="grid-column: span 2; text-align:center; color:#888; padding: 20px;">No products found.</p>';
+                return;
+            }
+
+            filtered.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.onclick = () => showProduct(p.id);
+                
+                const priceHTML = p.oldPrice 
+                    ? `<span class="old-price">R ${p.oldPrice.toFixed(2)}</span><span class="new-price">R ${p.price.toFixed(2)}</span>`
+                    : `<span class="new-price" style="color: var(--text-cream);">R ${p.price.toFixed(2)}</span>`;
+
+                card.innerHTML = `
+                    <div class="image-container">
+                        <img src="${p.image}" alt="${p.title}">
+                    </div>
+                    <div class="product-info">
+                        <h3>${p.title}</h3>
+                        <div class="price-wrapper">${priceHTML}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
         }
 
         window.filterCategory = function(cat, element) {
@@ -511,19 +506,64 @@
             element.classList.add('active');
             document.getElementById('searchBar').value = '';
             
-            if (cat === 'all') {
-                window.renderProductsToGrid(products);
-            } else {
-                let searchTerm = '';
-                if (cat === 'tops') searchTerm = 'Tops';
-                if (cat === 'bottoms') searchTerm = 'Bottoms';
-                if (cat === 'outerwear') searchTerm = 'Outerwear';
-                if (cat === 'footwear') searchTerm = 'Footwear';
-                if (cat === 'accessories') searchTerm = 'Accessories';
+            // Update the title based on the tab clicked
+            const titles = {
+                'all': 'ALL PRODUCTS',
+                'tops': 'TOPS',
+                'bottoms': 'BOTTOMS',
+                'outerwear': 'OUTERWEAR',
+                'footwear': 'FOOTWEAR',
+                'accessories': 'ACCESSORIES'
+            };
+            document.getElementById('homeTitle').innerText = titles[cat];
 
-                const filtered = products.filter(p => p.category.toLowerCase().includes(searchTerm.toLowerCase()));
-                window.renderProductsToGrid(filtered);
+            const grid = document.getElementById('mainProductGrid');
+            grid.innerHTML = '';
+
+            let filtered = [];
+            if (cat === 'all') {
+                filtered = products;
+            } else {
+                // Check if the category typed in Admin matches the tab clicked
+                filtered = products.filter(p => {
+                    if (!p.category) return false;
+                    const pCat = p.category.toLowerCase();
+                    if (cat === 'tops') return pCat.includes('tops') || pCat.includes('t-shirt') || pCat.includes('hoodie') || pCat.includes('shirt') || pCat.includes('sweater') || pCat.includes('polo') || pCat.includes('tank');
+                    if (cat === 'bottoms') return pCat.includes('bottoms') || pCat.includes('jeans') || pCat.includes('pants') || pCat.includes('shorts') || pCat.includes('skirt') || pCat.includes('leggings');
+                    if (cat === 'outerwear') return pCat.includes('outerwear') || pCat.includes('jacket') || pCat.includes('coat') || pCat.includes('blazer') || pCat.includes('bomber') || pCat.includes('vest');
+                    if (cat === 'footwear') return pCat.includes('footwear') || pCat.includes('shoes') || pCat.includes('sneaker') || pCat.includes('boot') || pCat.includes('sandal') || pCat.includes('slide');
+                    if (cat === 'accessories') return pCat.includes('accessories') || pCat.includes('bag') || pCat.includes('cap') || pCat.includes('hat') || pCat.includes('belt') || pCat.includes('glass') || pCat.includes('jewel') || pCat.includes('scarf') || pCat.includes('glove') || pCat.includes('sock');
+                    return false;
+                });
             }
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<p style="grid-column: span 2; text-align:center; color:#888; padding: 20px;">No products found.</p>';
+                return;
+            }
+
+            filtered.forEach((p, index) => {
+                const card = document.createElement('div');
+                // Make the very first (newest) item big if in "ALL"
+                card.className = (cat === 'all' && index === 0) ? 'product-card feature-card' : 'product-card';
+                card.onclick = () => showProduct(p.id);
+                
+                const priceHTML = p.oldPrice 
+                    ? `<span class="old-price">R ${p.oldPrice.toFixed(2)}</span><span class="new-price">R ${p.price.toFixed(2)}</span>`
+                    : `<span class="new-price" style="color: var(--text-cream);">R ${p.price.toFixed(2)}</span>`;
+
+                card.innerHTML = `
+                    <div class="image-container">
+                        ${(cat === 'all' && index === 0) ? '<span class="badge">NEW DROP</span>' : ''}
+                        <img src="${p.image}" alt="${p.title}">
+                    </div>
+                    <div class="product-info">
+                        <h3>${p.title}</h3>
+                        <div class="price-wrapper">${priceHTML}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
             showPage('home');
         }
 
