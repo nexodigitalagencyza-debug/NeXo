@@ -86,7 +86,6 @@
         .size-btn.disabled { color: #444; border-color: #1a1a1a; cursor: not-allowed; text-decoration: line-through; }
         .size-btn.disabled:hover { border-color: #1a1a1a; }
 
-        /* QUANTITY SELECTOR */
         .quantity-selector { display: flex; align-items: center; border: 1px solid #333; width: fit-content; margin-bottom: 20px; }
         .quantity-selector button { background: none; border: none; color: var(--text-cream); padding: 10px 20px; font-size: 1.2rem; cursor: pointer; transition: 0.3s; }
         .quantity-selector button:hover { color: var(--bv-green); }
@@ -466,6 +465,7 @@
             querySnapshot.forEach((doc) => {
                 products.push({ id: doc.id, ...doc.data() });
             });
+            // Sort so the newest uploaded product is always first
             products.sort((a, b) => (b.id > a.id ? 1 : -1));
             renderHome();
         }
@@ -482,7 +482,8 @@
 
             products.forEach((p, index) => {
                 const card = document.createElement('div');
-                card.className = index === 0 ? 'product-card feature-card' : 'product-card';
+                // ONLY ALLOW FEATURE CARD ON "ALL" VIEW
+                card.className = (document.getElementById('homeTitle').innerText === 'ALL PRODUCTS' && index === 0) ? 'product-card feature-card' : 'product-card';
                 card.onclick = () => showProduct(p.id);
                 
                 const thumbImage = p.images && p.images.length > 0 ? p.images[0] : 'https://placehold.co/400x500/121212/f4f1ea?text=No+Image';
@@ -493,7 +494,7 @@
 
                 card.innerHTML = `
                     <div class="image-container">
-                        ${index === 0 ? '<span class="badge">NEW DROP</span>' : ''}
+                        ${(document.getElementById('homeTitle').innerText === 'ALL PRODUCTS' && index === 0) ? '<span class="badge">NEW DROP</span>' : ''}
                         <img src="${thumbImage}" alt="${p.title}">
                     </div>
                     <div class="product-info">
@@ -581,12 +582,13 @@
             }
 
             if (filtered.length === 0) {
-                grid.innerHTML = '<p style="grid-column: span 2; text-align:center; color:#888; padding: 20px;">No products found.</p>';
+                grid.innerHTML = '<p style="grid-column: span 2; text-align:center; color:#888; padding: 20px;">No products found in this category.</p>';
                 return;
             }
 
             filtered.forEach((p, index) => {
                 const card = document.createElement('div');
+                // ONLY ALLOW FEATURE CARD ON "ALL" VIEW
                 card.className = (cat === 'all' && index === 0) ? 'product-card feature-card' : 'product-card';
                 card.onclick = () => showProduct(p.id);
                 
