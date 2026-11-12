@@ -157,13 +157,14 @@
 
         .size-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 100000; display: none; align-items: center; justify-content: center; }
         .size-modal-overlay.active { display: flex; }
-        .size-modal { background: var(--bg-card); padding: 30px; border: 1px solid #333; border-radius: 8px; width: 90%; max-width: 400px; position: relative; }
+        .size-modal { background: var(--bg-card); padding: 30px; border: 1px solid #333; border-radius: 8px; width: 90%; max-width: 450px; position: relative; max-height: 80vh; overflow-y: auto; }
         .size-modal h3 { font-family: 'Playfair Display', serif; font-size: 1.5rem; margin-bottom: 20px; text-align: center; }
-        .size-modal table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; }
-        .size-modal th, .size-modal td { padding: 12px; border-bottom: 1px solid #222; }
-        .size-modal th { color: var(--bv-green); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        .size-modal table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; margin-bottom: 20px; }
+        .size-modal th, .size-modal td { padding: 10px; border-bottom: 1px solid #222; }
+        .size-modal th { color: var(--bv-green); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; font-size: 0.75rem; background: #0a0a0a; }
         .size-modal td { color: var(--text-muted); }
         .close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-cream); font-size: 1.5rem; cursor: pointer; }
+        .size-chart-title { font-size: 0.8rem; color: var(--text-cream); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; background: #222; padding: 5px; text-align: center; }
 
         .site-footer { background-color: #050505; padding: 40px 20px 20px; border-top: 1px solid #1a1a1a; }
         .footer-columns { display: flex; flex-direction: column; gap: 30px; max-width: 1000px; margin: 0 auto 40px; }
@@ -465,7 +466,6 @@
             querySnapshot.forEach((doc) => {
                 products.push({ id: doc.id, ...doc.data() });
             });
-            // Sort so the newest uploaded product is always first
             products.sort((a, b) => (b.id > a.id ? 1 : -1));
             renderHome();
         }
@@ -482,7 +482,6 @@
 
             products.forEach((p, index) => {
                 const card = document.createElement('div');
-                // ONLY ALLOW FEATURE CARD ON "ALL" VIEW
                 card.className = (document.getElementById('homeTitle').innerText === 'ALL PRODUCTS' && index === 0) ? 'product-card feature-card' : 'product-card';
                 card.onclick = () => showProduct(p.id);
                 
@@ -588,7 +587,6 @@
 
             filtered.forEach((p, index) => {
                 const card = document.createElement('div');
-                // ONLY ALLOW FEATURE CARD ON "ALL" VIEW
                 card.className = (cat === 'all' && index === 0) ? 'product-card feature-card' : 'product-card';
                 card.onclick = () => showProduct(p.id);
                 
@@ -720,16 +718,17 @@
             } else {
                 content.innerHTML = `
                     <table>
-                        <thead><tr><th>Size</th><th>Chest (cm)</th><th>Length (cm)</th></tr></thead>
+                        <thead><tr><th>Alpha Size</th><th>SA Size</th><th>Chest / Bust (cm)</th></tr></thead>
                         <tbody>
-                            <tr><td>XS</td><td>105</td><td>66</td></tr>
-                            <tr><td>S</td><td>110</td><td>68</td></tr>
-                            <tr><td>M</td><td>115</td><td>70</td></tr>
-                            <tr><td>L</td><td>120</td><td>72</td></tr>
-                            <tr><td>XL</td><td>125</td><td>74</td></tr>
-                            <tr><td>XXL</td><td>130</td><td>76</td></tr>
+                            <tr><td>XS</td><td>28</td><td>88 (M) / 70 (L)</td></tr>
+                            <tr><td>S</td><td>30</td><td>94 (M) / 74 (L)</td></tr>
+                            <tr><td>M</td><td>32</td><td>100 (M) / 81 (L)</td></tr>
+                            <tr><td>L</td><td>34</td><td>108 (M) / 86 (L)</td></tr>
+                            <tr><td>XL</td><td>36</td><td>112 (M) / 98 (L)</td></tr>
+                            <tr><td>XXL</td><td>38</td><td>118 (M) / - (L)</td></tr>
                         </tbody>
                     </table>
+                    <div style="font-size: 0.75rem; color: #888; margin-top: 10px; text-align: center;">Note: (M) = Mens, (L) = Ladies</div>
                 `;
             }
             
@@ -843,7 +842,6 @@
             const randomNumbers = Math.floor(10000 + Math.random() * 90000);
             const orderNumber = `NXO${randomNumbers}`;
 
-            // SAVE ORDER TO FIREBASE FOR DASHBOARD
             try {
                 await addDoc(collection(db, "orders"), {
                     orderNumber: orderNumber,
