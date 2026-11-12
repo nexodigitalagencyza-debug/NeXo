@@ -18,7 +18,11 @@
 
         .sticky-wrapper { position: sticky; top: 0; z-index: 9999; background-color: rgba(8, 8, 8, 0.75); backdrop-filter: blur(25px); border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
         .main-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; }
-        .menu-btn { background: none; border: none; color: var(--text-cream); font-size: 1.6rem; cursor: pointer; transition: color 0.3s; }
+        
+        /* FIXED MENU BUTTON */
+        .menu-btn { background: none; border: none; color: var(--text-cream); font-size: 1.6rem; cursor: pointer; transition: color 0.3s; z-index: 100; padding: 5px; }
+        .menu-btn:hover { color: var(--bv-green); }
+        
         .logo { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.8rem; letter-spacing: 2px; text-transform: uppercase; }
         .logo-accent { color: var(--bv-green); font-style: italic; }
         .header-icons .icon { position: relative; display: flex; align-items: center; cursor: pointer; }
@@ -188,6 +192,7 @@
 
     <div class="sticky-wrapper">
         <header class="main-header">
+            <!-- THE 3 LINES ARE FULLY CLICKABLE NOW -->
             <button class="menu-btn" onclick="toggleMenu()">☰</button>
             <a class="logo" onclick="showPage('home')"><span>Ne</span><span class="logo-accent">Xo</span></a>
             <div class="header-icons">
@@ -326,7 +331,7 @@
                 </div>
             </div>
 
-            <!-- NEW ADMIN LINK -->
+            <!-- ADMIN LINK -->
             <a href="admin.html" class="menu-link" style="color: var(--bv-green); border-top: 1px solid #333; padding-top: 15px; margin-top: 15px;">Admin Panel</a>
         </div>
         
