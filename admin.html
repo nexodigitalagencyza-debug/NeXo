@@ -22,9 +22,14 @@
         .checkbox-group { display: flex; gap: 15px; margin-bottom: 15px; }
         .checkbox-group label { display: flex; align-items: center; gap: 5px; font-size: 0.9rem; cursor: pointer; }
         .checkbox-group input { width: auto; margin: 0; }
+
+        .luxury-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background-color: #008040; color: #ffffff; padding: 16px 30px; border-radius: 12px; font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 500; letter-spacing: 1px; box-shadow: 0 10px 30px rgba(0, 128, 64, 0.3); z-index: 100000; opacity: 0; transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); text-align: center; pointer-events: none; }
+        .luxury-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
     </style>
 </head>
 <body>
+
+    <div id="toastMessage" class="luxury-toast"></div>
 
     <div id="loginScreen" class="container">
         <h2>Admin Login</h2>
@@ -42,68 +47,13 @@
         <label>Description</label>
         <textarea id="prodDesc" placeholder="Product details..."></textarea>
 
-        <label>Category (Sub-Category)</label>
+        <label>Category</label>
         <select id="prodCategory">
-            <optgroup label="Tops">
-                <option value="T-Shirts">T-Shirts</option>
-                <option value="Shirts & Blouses">Shirts & Blouses</option>
-                <option value="Hoodies & Sweatshirts">Hoodies & Sweatshirts</option>
-                <option value="Sweaters & Knitwear">Sweaters & Knitwear</option>
-                <option value="Tank Tops">Tank Tops</option>
-                <option value="Polos">Polos</option>
-            </optgroup>
-            <optgroup label="Bottoms">
-                <option value="Sweatpants & Joggers">Sweatpants & Joggers</option>
-                <option value="Jeans">Jeans</option>
-                <option value="Trousers & Chinos">Trousers & Chinos</option>
-                <option value="Shorts">Shorts</option>
-                <option value="Skirts">Skirts</option>
-                <option value="Leggings">Leggings</option>
-            </optgroup>
-            <optgroup label="Outerwear">
-                <option value="Jackets">Jackets</option>
-                <option value="Coats">Coats</option>
-                <option value="Blazers">Blazers</option>
-                <option value="Bombers">Bombers</option>
-                <option value="Vests">Vests</option>
-            </optgroup>
-            <optgroup label="Dresses & Suits">
-                <option value="Dresses">Dresses</option>
-                <option value="Suits & Sets">Suits & Sets</option>
-                <option value="Jumpsuits">Jumpsuits</option>
-            </optgroup>
-            <optgroup label="Footwear">
-                <option value="Sneakers">Sneakers</option>
-                <option value="Boots">Boots</option>
-                <option value="Sandals & Slides">Sandals & Slides</option>
-                <option value="Formal Shoes">Formal Shoes</option>
-            </optgroup>
-            <optgroup label="Accessories">
-                <option value="Bags & Backpacks">Bags & Backpacks</option>
-                <option value="Hats & Caps">Hats & Caps</option>
-                <option value="Belts">Belts</option>
-                <option value="Sunglasses">Sunglasses</option>
-                <option value="Jewelry">Jewelry</option>
-                <option value="Scarves & Gloves">Scarves & Gloves</option>
-                <option value="Socks">Socks</option>
-            </optgroup>
-            <optgroup label="Activewear">
-                <option value="Sports Tops">Sports Tops</option>
-                <option value="Sports Bottoms">Sports Bottoms</option>
-                <option value="Matching Sets">Matching Sets</option>
-            </optgroup>
-            <optgroup label="Underwear & Sleepwear">
-                <option value="Underwear">Underwear</option>
-                <option value="Bras">Bras</option>
-                <option value="Sleepwear & Loungewear">Sleepwear & Loungewear</option>
-            </optgroup>
-            <optgroup label="Shop By Collection">
-                <option value="New Arrivals">New Arrivals</option>
-                <option value="Best Sellers">Best Sellers</option>
-                <option value="Sale">Sale</option>
-                <option value="Streetwear">Streetwear</option>
-                <option value="Essentials/Basics">Essentials/Basics</option>
-            </optgroup>
+            <option value="Tops">Tops</option>
+            <option value="Bottoms">Bottoms</option>
+            <option value="Outerwear">Outerwear</option>
+            <option value="Footwear">Footwear</option>
+            <option value="Accessories">Accessories</option>
         </select>
 
         <label>New Price (R)</label>
@@ -150,6 +100,13 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        window.showToast = function(message) {
+            const toast = document.getElementById('toastMessage');
+            toast.innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
         window.checkPassword = function() {
             const passwordInput = document.getElementById('adminPassword').value;
             if (passwordInput === "GWPYBTIFOTWBY1!w") {
@@ -157,7 +114,7 @@
                 document.getElementById('adminContent').classList.remove('hidden');
                 loadAdminProducts();
             } else {
-                alert("Incorrect Password");
+                showToast("Incorrect Password");
             }
         };
 
@@ -178,7 +135,7 @@
 
             const file = document.getElementById('prodImage').files[0];
 
-            if (!title || !price) { alert("Fill in Title and Price."); return; }
+            if (!title || !price) { showToast("Fill in Title and Price."); return; }
 
             try {
                 let imageUrl = null;
@@ -209,20 +166,20 @@
                     };
                     if (imageUrl) updateData.image = imageUrl;
                     await updateDoc(productRef, updateData);
-                    alert("Product Updated!");
+                    showToast("Product Updated!");
                 } else {
-                    if (!imageUrl) { alert("Please upload an image for new products."); return; }
+                    if (!imageUrl) { showToast("Please upload an image for new products."); return; }
                     await addDoc(collection(db, "products"), {
                         title: title, description: description, category: category, price: price, 
                         oldPrice: oldPrice, sizes: availableSizes, image: imageUrl, feature: false
                     });
-                    alert("Product Uploaded!");
+                    showToast("Product Uploaded!");
                 }
 
-                window.location.reload();
+                setTimeout(() => { window.location.reload(); }, 1500);
             } catch (error) {
                 console.error(error);
-                alert("Error: " + error.message);
+                showToast("Error: " + error.message);
             }
         };
 
@@ -294,7 +251,7 @@
         window.deleteProduct = async function(id) {
             if(confirm("Delete this product permanently?")) {
                 await deleteDoc(doc(db, "products", id));
-                window.location.reload();
+                setTimeout(() => { window.location.reload(); }, 500);
             }
         };
     </script>
