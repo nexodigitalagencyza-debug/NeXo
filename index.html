@@ -19,7 +19,6 @@
         .sticky-wrapper { position: sticky; top: 0; z-index: 9999; background-color: rgba(8, 8, 8, 0.75); backdrop-filter: blur(25px); border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
         .main-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; }
         
-        /* FIXED MENU BUTTON */
         .menu-btn { background: none; border: none; color: var(--text-cream); font-size: 1.6rem; cursor: pointer; transition: color 0.3s; z-index: 100; padding: 5px; }
         .menu-btn:hover { color: var(--bv-green); }
         
@@ -192,7 +191,6 @@
 
     <div class="sticky-wrapper">
         <header class="main-header">
-            <!-- THE 3 LINES ARE FULLY CLICKABLE NOW -->
             <button class="menu-btn" onclick="toggleMenu()">☰</button>
             <a class="logo" onclick="showPage('home')"><span>Ne</span><span class="logo-accent">Xo</span></a>
             <div class="header-icons">
@@ -331,7 +329,6 @@
                 </div>
             </div>
 
-            <!-- ADMIN LINK -->
             <a href="admin.html" class="menu-link" style="color: var(--bv-green); border-top: 1px solid #333; padding-top: 15px; margin-top: 15px;">Admin Panel</a>
         </div>
         
@@ -356,6 +353,39 @@
         <div class="footer-bottom"><p>&copy; 2024 NEXO. ALL RIGHTS RESERVED.</p></div>
     </footer>
 
+    <!-- UI LOGIC SCRIPT (Clickable Menus & Modals) -->
+    <script>
+        function toggleMenu() {
+            document.getElementById('sideMenu').classList.toggle('open');
+        }
+
+        function toggleDropdown(id, element) {
+            const dropdown = document.getElementById(id);
+            if (dropdown.style.display === 'block') {
+                dropdown.style.display = 'none';
+                element.innerHTML = element.innerHTML.replace('&#9652;', '&#9662;');
+            } else {
+                document.querySelectorAll('.dropdown-content').forEach(d => d.style.display = 'none');
+                document.querySelectorAll('.dropdown-container .menu-link').forEach(el => el.innerHTML = el.innerHTML.replace('&#9652;', '&#9662;'));
+                dropdown.style.display = 'block';
+                element.innerHTML = element.innerHTML.replace('&#9662;', '&#9652;');
+            }
+        }
+
+        function toggleSizeGuide() {
+            document.getElementById('sizeModal').classList.toggle('active');
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page-view').forEach(page => page.classList.remove('active'));
+            document.getElementById('view-' + pageId).classList.add('active');
+            window.scrollTo(0, 0);
+            if (pageId === 'home') renderHome();
+            if (pageId === 'cart') renderCart();
+        }
+    </script>
+
+    <!-- DATA LOGIC SCRIPT (Firebase & Cart) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
@@ -398,16 +428,7 @@
             renderHome();
         }
 
-        function showPage(pageId) {
-            document.querySelectorAll('.page-view').forEach(page => page.classList.remove('active'));
-            document.getElementById(`view-${pageId}`).classList.add('active');
-            window.scrollTo(0, 0);
-            
-            if (pageId === 'home') renderHome();
-            if (pageId === 'cart') renderCart();
-        }
-
-        function renderHome() {
+        window.renderHome = function() {
             const container = document.getElementById('categoryContent');
             container.innerHTML = '';
             
@@ -440,10 +461,10 @@
             productGrid.id = 'mainProductGrid';
             container.appendChild(productGrid);
             
-            renderProductsToGrid(products);
+            window.renderProductsToGrid(products);
         }
 
-        function renderProductsToGrid(productList) {
+        window.renderProductsToGrid = function(productList) {
             const grid = document.getElementById('mainProductGrid');
             if(!grid) return;
             grid.innerHTML = '';
@@ -476,22 +497,22 @@
             });
         }
 
-        function searchProducts() {
+        window.searchProducts = function() {
             const query = document.getElementById('searchBar').value.toLowerCase();
             const filtered = products.filter(p => 
                 p.title.toLowerCase().includes(query) || 
                 (p.category && p.category.toLowerCase().includes(query))
             );
-            renderProductsToGrid(filtered);
+            window.renderProductsToGrid(filtered);
         }
 
-        function filterCategory(cat, element) {
+        window.filterCategory = function(cat, element) {
             document.querySelectorAll('.category-nav a').forEach(a => a.classList.remove('active'));
             element.classList.add('active');
             document.getElementById('searchBar').value = '';
             
             if (cat === 'all') {
-                renderProductsToGrid(products);
+                window.renderProductsToGrid(products);
             } else {
                 let searchTerm = '';
                 if (cat === 'tops') searchTerm = 'Tops';
@@ -501,12 +522,12 @@
                 if (cat === 'accessories') searchTerm = 'Accessories';
 
                 const filtered = products.filter(p => p.category.toLowerCase().includes(searchTerm.toLowerCase()));
-                renderProductsToGrid(filtered);
+                window.renderProductsToGrid(filtered);
             }
             showPage('home');
         }
 
-        function showProduct(id) {
+        window.showProduct = function(id) {
             currentProduct = products.find(p => p.id === id);
             selectedSize = null;
             
@@ -541,20 +562,20 @@
             showPage('product');
         }
 
-        function selectSize(element) {
+        window.selectSize = function(element) {
             document.querySelectorAll('.size-btn').forEach(btn => btn.classList.remove('selected'));
             element.classList.add('selected');
             selectedSize = element.innerText;
         }
 
-        function showToast(message) {
+        window.showToast = function(message) {
             const toast = document.getElementById('toastMessage');
             toast.innerText = message;
             toast.classList.add('show');
             setTimeout(() => { toast.classList.remove('show'); }, 3000);
         }
 
-        function addToCart() {
+        window.addToCart = function() {
             if (!selectedSize) { showToast("Please select a size"); return; }
 
             cart.push({
@@ -569,7 +590,7 @@
             showToast("Added To Cart");
         }
 
-        function renderCart() {
+        window.renderCart = function() {
             const container = document.getElementById('cartItemsContainer');
             const summary = document.getElementById('cartSummary');
             const emptyMsg = document.getElementById('emptyMessage');
@@ -615,53 +636,31 @@
             updateCartIcon();
         }
 
-        function deleteItem(index) { 
+        window.deleteItem = function(index) { 
             cart.splice(index, 1); 
             saveCart(); 
             renderCart(); 
             showToast("Item Removed");
         }
 
-        function updateQuantity(index, change) { 
+        window.updateQuantity = function(index, change) { 
             cart[index].quantity += change; 
             if (cart[index].quantity < 1) cart[index].quantity = 1; 
             saveCart(); 
             renderCart(); 
         }
 
-        function saveCart() { 
+        window.saveCart = function() { 
             localStorage.setItem('nexoCart', JSON.stringify(cart)); 
             updateCartIcon();
         }
 
-        function updateCartIcon() {
+        window.updateCartIcon = function() {
             let totalItems = cart.reduce((total, item) => total + item.quantity, 0);
             document.getElementById('cartCount').innerText = totalItems;
         }
 
-        function toggleMenu() {
-            document.getElementById('sideMenu').classList.toggle('open');
-        }
-
-        function toggleDropdown(id, element) {
-            const dropdown = document.getElementById(id);
-            if (dropdown.style.display === 'block') {
-                dropdown.style.display = 'none';
-                element.innerHTML = element.innerHTML.replace('&#9652;', '&#9662;');
-            } else {
-                document.querySelectorAll('.dropdown-content').forEach(d => d.style.display = 'none');
-                document.querySelectorAll('.dropdown-container .menu-link').forEach(el => el.innerHTML = el.innerHTML.replace('&#9652;', '&#9662;'));
-                
-                dropdown.style.display = 'block';
-                element.innerHTML = element.innerHTML.replace('&#9662;', '&#9652;');
-            }
-        }
-
-        function toggleSizeGuide() {
-            document.getElementById('sizeModal').classList.toggle('active');
-        }
-
-        function processPayment() {
+        window.processPayment = function() {
             if (cart.length === 0) return;
 
             const email = document.getElementById('userEmail').value.trim();
