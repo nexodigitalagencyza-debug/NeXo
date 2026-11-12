@@ -685,6 +685,7 @@
             
             if (currentProduct && currentProduct.category === 'Footwear') {
                 content.innerHTML = `
+                    <div class="size-chart-title">Footwear Size Guide</div>
                     <table>
                         <thead><tr><th>UK Size</th><th>EU Size</th><th>US Size</th></tr></thead>
                         <tbody>
@@ -707,6 +708,7 @@
                 `;
             } else if (currentProduct && currentProduct.category === 'Accessories') {
                 content.innerHTML = `
+                    <div class="size-chart-title">Headwear Size Guide</div>
                     <table>
                         <thead><tr><th>Size</th><th>Head Circumference (cm)</th></tr></thead>
                         <tbody>
@@ -715,20 +717,36 @@
                         </tbody>
                     </table>
                 `;
-            } else {
+            } else if (currentProduct && currentProduct.category === 'Bottoms') {
                 content.innerHTML = `
+                    <div class="size-chart-title">Bottoms Size Guide</div>
                     <table>
-                        <thead><tr><th>Alpha Size</th><th>SA Size</th><th>Chest / Bust (cm)</th></tr></thead>
+                        <thead><tr><th>Alpha</th><th>SA Size</th><th>Waist (cm)</th><th>Hip (cm)</th><th>Inleg/Length (cm)</th></tr></thead>
                         <tbody>
-                            <tr><td>XS</td><td>28</td><td>88 (M) / 70 (L)</td></tr>
-                            <tr><td>S</td><td>30</td><td>94 (M) / 74 (L)</td></tr>
-                            <tr><td>M</td><td>32</td><td>100 (M) / 81 (L)</td></tr>
-                            <tr><td>L</td><td>34</td><td>108 (M) / 86 (L)</td></tr>
-                            <tr><td>XL</td><td>36</td><td>112 (M) / 98 (L)</td></tr>
-                            <tr><td>XXL</td><td>38</td><td>118 (M) / - (L)</td></tr>
+                            <tr><td>XS</td><td>28</td><td>70</td><td>92</td><td>73</td></tr>
+                            <tr><td>S</td><td>30</td><td>76</td><td>98</td><td>74</td></tr>
+                            <tr><td>M</td><td>32</td><td>82</td><td>104</td><td>75</td></tr>
+                            <tr><td>L</td><td>34</td><td>88</td><td>110</td><td>76</td></tr>
+                            <tr><td>XL</td><td>36</td><td>94</td><td>116</td><td>77</td></tr>
+                            <tr><td>XXL</td><td>38</td><td>100</td><td>122</td><td>78</td></tr>
                         </tbody>
                     </table>
-                    <div style="font-size: 0.75rem; color: #888; margin-top: 10px; text-align: center;">Note: (M) = Mens, (L) = Ladies</div>
+                `;
+            } else {
+                content.innerHTML = `
+                    <div class="size-chart-title">Tops Size Guide</div>
+                    <table>
+                        <thead><tr><th>Alpha</th><th>SA Size</th><th>Chest (cm)</th></tr></thead>
+                        <tbody>
+                            <tr><td>XS</td><td>28</td><td>88</td></tr>
+                            <tr><td>S</td><td>30</td><td>94</td></tr>
+                            <tr><td>M</td><td>32</td><td>100</td></tr>
+                            <tr><td>L</td><td>34</td><td>108</td></tr>
+                            <tr><td>XL</td><td>36</td><td>112</td></tr>
+                            <tr><td>XXL</td><td>38</td><td>118</td></tr>
+                        </tbody>
+                    </table>
+                    <div style="font-size: 0.75rem; color: #888; margin-top: 10px; text-align: center;">Measurements are for Mens Tops. For Ladies, sizes are smaller.</div>
                 `;
             }
             
