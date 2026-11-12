@@ -63,7 +63,12 @@
         .new-price { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 0.85rem; color: var(--bv-green); }
 
         .product-detail-view { padding: 0 0 40px 0; }
-        .product-detail-img { width: 100%; height: auto; max-height: 70vh; object-fit: cover; background-color: var(--bg-card); display: block; }
+        .main-image-container { width: 100%; height: auto; max-height: 70vh; background-color: var(--bg-card); display: block; overflow: hidden; }
+        .main-image-container img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .image-gallery { display: flex; gap: 10px; padding: 15px; overflow-x: auto; background: #0d0d0d; }
+        .image-gallery img { width: 80px; height: 100px; object-fit: cover; cursor: pointer; border: 1px solid #333; transition: 0.3s; }
+        .image-gallery img:hover { border-color: var(--bv-green); }
+
         .product-detail-info { padding: 30px 20px; }
         .product-detail-title { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; margin-bottom: 5px; }
         
@@ -171,15 +176,7 @@
         <div class="size-modal">
             <button class="close-modal" onclick="toggleSizeGuide()">&times;</button>
             <h3>Size Guide</h3>
-            <table>
-                <thead><tr><th>Size</th><th>Chest (cm)</th><th>Length (cm)</th></tr></thead>
-                <tbody>
-                    <tr><td>S</td><td>110</td><td>68</td></tr>
-                    <tr><td>M</td><td>115</td><td>70</td></tr>
-                    <tr><td>L</td><td>120</td><td>72</td></tr>
-                    <tr><td>XL</td><td>125</td><td>74</td></tr>
-                </tbody>
-            </table>
+            <div id="sizeGuideContent"></div>
         </div>
     </div>
 
@@ -226,7 +223,11 @@
 
     <div id="view-product" class="page-view">
         <div class="product-detail-view">
-            <img src="" id="detailImg" class="product-detail-img">
+            <div class="main-image-container">
+                <img src="" id="detailImg">
+            </div>
+            <div class="image-gallery" id="detailGallery"></div>
+            
             <div class="product-detail-info">
                 <h1 class="product-detail-title" id="detailTitle"></h1>
                 <p class="product-detail-price" id="detailPrice"></p>
@@ -439,10 +440,12 @@
 
             products.forEach((p, index) => {
                 const card = document.createElement('div');
-                // Make the very first (newest) item big
                 card.className = index === 0 ? 'product-card feature-card' : 'product-card';
                 card.onclick = () => showProduct(p.id);
                 
+                // Use the first image in the array as the thumbnail
+                const thumbImage = p.images && p.images.length > 0 ? p.images[0] : 'https://placehold.co/400x500/121212/f4f1ea?text=No+Image';
+
                 const priceHTML = p.oldPrice 
                     ? `<span class="old-price">R ${p.oldPrice.toFixed(2)}</span><span class="new-price">R ${p.price.toFixed(2)}</span>`
                     : `<span class="new-price" style="color: var(--text-cream);">R ${p.price.toFixed(2)}</span>`;
@@ -450,7 +453,7 @@
                 card.innerHTML = `
                     <div class="image-container">
                         ${index === 0 ? '<span class="badge">NEW DROP</span>' : ''}
-                        <img src="${p.image}" alt="${p.title}">
+                        <img src="${thumbImage}" alt="${p.title}">
                     </div>
                     <div class="product-info">
                         <h3>${p.title}</h3>
@@ -484,13 +487,14 @@
                 card.className = 'product-card';
                 card.onclick = () => showProduct(p.id);
                 
+                const thumbImage = p.images && p.images.length > 0 ? p.images[0] : 'https://placehold.co/400x500/121212/f4f1ea?text=No+Image';
                 const priceHTML = p.oldPrice 
                     ? `<span class="old-price">R ${p.oldPrice.toFixed(2)}</span><span class="new-price">R ${p.price.toFixed(2)}</span>`
                     : `<span class="new-price" style="color: var(--text-cream);">R ${p.price.toFixed(2)}</span>`;
 
                 card.innerHTML = `
                     <div class="image-container">
-                        <img src="${p.image}" alt="${p.title}">
+                        <img src="${thumbImage}" alt="${p.title}">
                     </div>
                     <div class="product-info">
                         <h3>${p.title}</h3>
@@ -506,7 +510,6 @@
             element.classList.add('active');
             document.getElementById('searchBar').value = '';
             
-            // Update the title based on the tab clicked
             const titles = {
                 'all': 'ALL PRODUCTS',
                 'tops': 'TOPS',
@@ -524,15 +527,14 @@
             if (cat === 'all') {
                 filtered = products;
             } else {
-                // Check if the category typed in Admin matches the tab clicked
                 filtered = products.filter(p => {
                     if (!p.category) return false;
                     const pCat = p.category.toLowerCase();
-                    if (cat === 'tops') return pCat.includes('tops') || pCat.includes('t-shirt') || pCat.includes('hoodie') || pCat.includes('shirt') || pCat.includes('sweater') || pCat.includes('polo') || pCat.includes('tank');
-                    if (cat === 'bottoms') return pCat.includes('bottoms') || pCat.includes('jeans') || pCat.includes('pants') || pCat.includes('shorts') || pCat.includes('skirt') || pCat.includes('leggings');
-                    if (cat === 'outerwear') return pCat.includes('outerwear') || pCat.includes('jacket') || pCat.includes('coat') || pCat.includes('blazer') || pCat.includes('bomber') || pCat.includes('vest');
-                    if (cat === 'footwear') return pCat.includes('footwear') || pCat.includes('shoes') || pCat.includes('sneaker') || pCat.includes('boot') || pCat.includes('sandal') || pCat.includes('slide');
-                    if (cat === 'accessories') return pCat.includes('accessories') || pCat.includes('bag') || pCat.includes('cap') || pCat.includes('hat') || pCat.includes('belt') || pCat.includes('glass') || pCat.includes('jewel') || pCat.includes('scarf') || pCat.includes('glove') || pCat.includes('sock');
+                    if (cat === 'tops') return pCat.includes('tops');
+                    if (cat === 'bottoms') return pCat.includes('bottoms');
+                    if (cat === 'outerwear') return pCat.includes('outerwear');
+                    if (cat === 'footwear') return pCat.includes('footwear');
+                    if (cat === 'accessories') return pCat.includes('accessories');
                     return false;
                 });
             }
@@ -544,10 +546,10 @@
 
             filtered.forEach((p, index) => {
                 const card = document.createElement('div');
-                // Make the very first (newest) item big if in "ALL"
                 card.className = (cat === 'all' && index === 0) ? 'product-card feature-card' : 'product-card';
                 card.onclick = () => showProduct(p.id);
                 
+                const thumbImage = p.images && p.images.length > 0 ? p.images[0] : 'https://placehold.co/400x500/121212/f4f1ea?text=No+Image';
                 const priceHTML = p.oldPrice 
                     ? `<span class="old-price">R ${p.oldPrice.toFixed(2)}</span><span class="new-price">R ${p.price.toFixed(2)}</span>`
                     : `<span class="new-price" style="color: var(--text-cream);">R ${p.price.toFixed(2)}</span>`;
@@ -555,7 +557,7 @@
                 card.innerHTML = `
                     <div class="image-container">
                         ${(cat === 'all' && index === 0) ? '<span class="badge">NEW DROP</span>' : ''}
-                        <img src="${p.image}" alt="${p.title}">
+                        <img src="${thumbImage}" alt="${p.title}">
                     </div>
                     <div class="product-info">
                         <h3>${p.title}</h3>
@@ -571,9 +573,23 @@
             currentProduct = products.find(p => p.id === id);
             selectedSize = null;
             
-            document.getElementById('detailImg').src = currentProduct.image;
+            // Set the main image to the thumbnail
+            const mainImgSrc = currentProduct.images && currentProduct.images.length > 0 ? currentProduct.images[0] : 'https://placehold.co/400x500/121212/f4f1ea?text=No+Image';
+            document.getElementById('detailImg').src = mainImgSrc;
             document.getElementById('detailTitle').innerText = currentProduct.title;
             document.getElementById('detailDesc').innerText = currentProduct.description || 'Premium quality streetwear.';
+            
+            // Build the image gallery
+            const galleryContainer = document.getElementById('detailGallery');
+            galleryContainer.innerHTML = '';
+            if (currentProduct.images && currentProduct.images.length > 1) {
+                currentProduct.images.forEach(imgUrl => {
+                    const img = document.createElement('img');
+                    img.src = imgUrl;
+                    img.onclick = () => { document.getElementById('detailImg').src = imgUrl; };
+                    galleryContainer.appendChild(img);
+                });
+            }
             
             const priceHTML = currentProduct.oldPrice 
                 ? `<span>R ${currentProduct.oldPrice.toFixed(2)}</span> R ${currentProduct.price.toFixed(2)}`
@@ -581,9 +597,11 @@
             
             document.getElementById('detailPrice').innerHTML = priceHTML;
             
+            // Generate Size buttons
             const sizesContainer = document.getElementById('detailSizes');
             sizesContainer.innerHTML = '';
-            
+            sizesContainer.style.gridTemplateColumns = `repeat(${currentProduct.sizes.length > 4 ? 5 : 4}, 1fr)`;
+
             currentProduct.sizes.forEach(size => {
                 const isDisabled = size.includes('_disabled');
                 const sizeText = size.replace('_disabled', '');
@@ -615,14 +633,72 @@
             setTimeout(() => { toast.classList.remove('show'); }, 3000);
         }
 
+        window.toggleSizeGuide = function() {
+            const modal = document.getElementById('sizeModal');
+            const content = document.getElementById('sizeGuideContent');
+            
+            // Determine which size chart to show based on the product category
+            if (currentProduct && currentProduct.category === 'Footwear') {
+                content.innerHTML = `
+                    <table>
+                        <thead><tr><th>UK Size</th><th>EU Size</th><th>US Size</th></tr></thead>
+                        <tbody>
+                            <tr><td>1</td><td>33</td><td>1.5</td></tr>
+                            <tr><td>2</td><td>34.5</td><td>3</td></tr>
+                            <tr><td>3</td><td>36</td><td>4</td></tr>
+                            <tr><td>4</td><td>37</td><td>5</td></tr>
+                            <tr><td>5</td><td>38</td><td>6</td></tr>
+                            <tr><td>6</td><td>39</td><td>7</td></tr>
+                            <tr><td>7</td><td>41</td><td>8</td></tr>
+                            <tr><td>8</td><td>42</td><td>9</td></tr>
+                            <tr><td>9</td><td>43</td><td>10</td></tr>
+                            <tr><td>10</td><td>44.5</td><td>11</td></tr>
+                            <tr><td>11</td><td>46</td><td>12</td></tr>
+                            <tr><td>12</td><td>47</td><td>13</td></tr>
+                            <tr><td>13</td><td>48</td><td>14</td></tr>
+                            <tr><td>14</td><td>49.5</td><td>15</td></tr>
+                        </tbody>
+                    </table>
+                `;
+            } else if (currentProduct && currentProduct.category === 'Accessories') {
+                content.innerHTML = `
+                    <table>
+                        <thead><tr><th>Size</th><th>Head Circumference (cm)</th></tr></thead>
+                        <tbody>
+                            <tr><td>S/M</td><td>54 - 57</td></tr>
+                            <tr><td>L/XL</td><td>57 - 60</td></tr>
+                        </tbody>
+                    </table>
+                `;
+            } else {
+                content.innerHTML = `
+                    <table>
+                        <thead><tr><th>Size</th><th>Chest (cm)</th><th>Length (cm)</th></tr></thead>
+                        <tbody>
+                            <tr><td>XS</td><td>105</td><td>66</td></tr>
+                            <tr><td>S</td><td>110</td><td>68</td></tr>
+                            <tr><td>M</td><td>115</td><td>70</td></tr>
+                            <tr><td>L</td><td>120</td><td>72</td></tr>
+                            <tr><td>XL</td><td>125</td><td>74</td></tr>
+                            <tr><td>XXL</td><td>130</td><td>76</td></tr>
+                        </tbody>
+                    </table>
+                `;
+            }
+            
+            modal.classList.toggle('active');
+        }
+
         window.addToCart = function() {
             if (!selectedSize) { showToast("Please select a size"); return; }
+
+            const thumbImage = currentProduct.images && currentProduct.images.length > 0 ? currentProduct.images[0] : 'https://placehold.co/400x500/121212/f4f1ea?text=No+Image';
 
             cart.push({
                 title: currentProduct.title,
                 price: currentProduct.price,
                 size: selectedSize,
-                image: currentProduct.image,
+                image: thumbImage,
                 quantity: 1
             });
 
