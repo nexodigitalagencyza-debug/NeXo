@@ -86,6 +86,12 @@
         .size-btn.disabled { color: #444; border-color: #1a1a1a; cursor: not-allowed; text-decoration: line-through; }
         .size-btn.disabled:hover { border-color: #1a1a1a; }
 
+        /* QUANTITY SELECTOR */
+        .quantity-selector { display: flex; align-items: center; border: 1px solid #333; width: fit-content; margin-bottom: 20px; }
+        .quantity-selector button { background: none; border: none; color: var(--text-cream); padding: 10px 20px; font-size: 1.2rem; cursor: pointer; transition: 0.3s; }
+        .quantity-selector button:hover { color: var(--bv-green); }
+        .quantity-selector span { padding: 0 15px; font-size: 1rem; font-weight: 600; }
+
         .button-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
         .add-to-cart-btn { width: 100%; padding: 18px; background-color: var(--text-cream); color: #000; border: none; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: 0.3s; }
         .add-to-cart-btn:hover { background-color: var(--bv-green); color: #fff; }
@@ -135,7 +141,6 @@
         .dropdown-content strong { color: var(--text-cream); }
         .dropdown-content em { color: var(--bv-green); font-style: normal; font-weight: bold; display: block; margin-bottom: 10px; text-align: center; }
 
-        /* CHECKBOX STYLES */
         .policy-checkbox-container { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
         .policy-checkbox-label { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: var(--text-cream); cursor: pointer; }
         .policy-checkbox-label input { accent-color: var(--bv-green); width: 16px; height: 16px; }
@@ -243,6 +248,13 @@
                 </div>
 
                 <div class="size-options" id="detailSizes"></div>
+
+                <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px; font-weight: 600;">Quantity</h4>
+                <div class="quantity-selector">
+                    <button onclick="changeDetailQuantity(-1)">-</button>
+                    <span id="detailQuantity">1</span>
+                    <button onclick="changeDetailQuantity(1)">+</button>
+                </div>
 
                 <div class="button-group">
                     <button class="add-to-cart-btn" onclick="addToCart()">Add To Cart</button>
@@ -428,7 +440,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDc8RBSOsqaE2pt6Mu3ArKcTGHKf3z-vIs",
@@ -445,6 +457,7 @@
         let products = [];
         let currentProduct = null;
         let selectedSize = null;
+        let detailQuantity = 1;
         let cart = JSON.parse(localStorage.getItem('nexoCart')) || [];
 
         async function fetchProducts() {
@@ -600,6 +613,8 @@
         window.showProduct = function(id) {
             currentProduct = products.find(p => p.id === id);
             selectedSize = null;
+            detailQuantity = 1;
+            document.getElementById('detailQuantity').innerText = detailQuantity;
             
             const mainImgSrc = currentProduct.images && currentProduct.images.length > 0 ? currentProduct.images[0] : 'https://placehold.co/400x500/121212/f4f1ea?text=No+Image';
             document.getElementById('detailImg').src = mainImgSrc;
@@ -649,6 +664,12 @@
             document.querySelectorAll('.size-btn').forEach(btn => btn.classList.remove('selected'));
             element.classList.add('selected');
             selectedSize = element.innerText;
+        }
+
+        window.changeDetailQuantity = function(change) {
+            detailQuantity += change;
+            if (detailQuantity < 1) detailQuantity = 1;
+            document.getElementById('detailQuantity').innerText = detailQuantity;
         }
 
         window.showToast = function(message) {
@@ -723,7 +744,7 @@
                 price: currentProduct.price,
                 size: selectedSize,
                 image: thumbImage,
-                quantity: 1
+                quantity: detailQuantity
             });
 
             saveCart();
@@ -800,7 +821,7 @@
             document.getElementById('cartCount').innerText = totalItems;
         }
 
-        window.processPayment = function() {
+        window.processPayment = async function() {
             if (cart.length === 0) return;
 
             const email = document.getElementById('userEmail').value.trim();
@@ -819,6 +840,25 @@
             
             const randomNumbers = Math.floor(10000 + Math.random() * 90000);
             const orderNumber = `NXO${randomNumbers}`;
+
+            // SAVE ORDER TO FIREBASE FOR DASHBOARD
+            try {
+                await addDoc(collection(db, "orders"), {
+                    orderNumber: orderNumber,
+                    email: email,
+                    street: street,
+                    city: city,
+                    postal: postal,
+                    courier: courier,
+                    subtotal: subtotal,
+                    shipping: 140,
+                    total: total,
+                    items: cart,
+                    date: new Date().toISOString()
+                });
+            } catch (error) {
+                console.error("Error saving order:", error);
+            }
 
             let message = `*NEW ORDER: ${orderNumber}*\n\n`;
             message += `*Customer Details:*\n`;
