@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeXo | Admin Panel</title>
+    <style>
+        body { background-color: #080808; color: #f4f1ea; font-family: sans-serif; padding: 20px; }
+        .container { max-width: 500px; margin: 0 auto; background: #121212; padding: 20px; border-radius: 8px; border: 1px solid #333; }
+        h2 { text-align: center; color: #008040; }
+        input, select, textarea { width: 100%; padding: 10px; margin-bottom: 15px; background: transparent; border: 1px solid #444; color: white; border-radius: 4px; font-family: sans-serif; }
+        textarea { resize: vertical; height: 80px; }
+        button { width: 100%; padding: 15px; background: #008040; color: white; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; margin-bottom: 10px; }
+        button:hover { background: #006633; }
+        .cancel-btn { background: #555; }
+        .product-list { margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; }
+        .product-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #222; }
+        .action-btns { display: flex; gap: 5px; }
+        .edit-btn { background: #f0ad4e; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; width: auto; font-size: 12px; }
+        .delete-btn { background: #ff4d4d; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; width: auto; font-size: 12px; }
+        .hidden { display: none; }
+        .checkbox-group { display: flex; gap: 15px; margin-bottom: 15px; }
+        .checkbox-group label { display: flex; align-items: center; gap: 5px; font-size: 0.9rem; cursor: pointer; }
+        .checkbox-group input { width: auto; margin: 0; }
+    </style>
+</head>
+<body>
+
+    <div id="loginScreen" class="container">
+        <h2>Admin Login</h2>
+        <input type="password" id="adminPassword" placeholder="Enter Password">
+        <button onclick="checkPassword()">Login</button>
+    </div>
+
+    <div id="adminContent" class="container hidden">
+        <h2 id="formTitle">Upload New Product</h2>
+        <input type="hidden" id="editId" value="">
+        
+        <label>Product Title</label>
+        <input type="text" id="prodTitle" placeholder="e.g., Chris Brown Graphic Tee">
+
+        <label>Description</label>
+        <textarea id="prodDesc" placeholder="Product details..."></textarea>
+
+        <label>Category (Sub-Category)</label>
+        <select id="prodCategory">
+            <optgroup label="Tops">
+                <option value="T-Shirts">T-Shirts</option>
+                <option value="Shirts & Blouses">Shirts & Blouses</option>
+                <option value="Hoodies & Sweatshirts">Hoodies & Sweatshirts</option>
+                <option value="Sweaters & Knitwear">Sweaters & Knitwear</option>
+                <option value="Tank Tops">Tank Tops</option>
+                <option value="Polos">Polos</option>
+            </optgroup>
+            <optgroup label="Bottoms">
+                <option value="Sweatpants & Joggers">Sweatpants & Joggers</option>
+                <option value="Jeans">Jeans</option>
+                <option value="Trousers & Chinos">Trousers & Chinos</option>
+                <option value="Shorts">Shorts</option>
+                <option value="Skirts">Skirts</option>
+                <option value="Leggings">Leggings</option>
+            </optgroup>
+            <optgroup label="Outerwear">
+                <option value="Jackets">Jackets</option>
+                <option value="Coats">Coats</option>
+                <option value="Blazers">Blazers</option>
+                <option value="Bombers">Bombers</option>
+                <option value="Vests">Vests</option>
+            </optgroup>
+            <optgroup label="Dresses & Suits">
+                <option value="Dresses">Dresses</option>
+                <option value="Suits & Sets">Suits & Sets</option>
+                <option value="Jumpsuits">Jumpsuits</option>
+            </optgroup>
+            <optgroup label="Footwear">
+                <option value="Sneakers">Sneakers</option>
+                <option value="Boots">Boots</option>
+                <option value="Sandals & Slides">Sandals & Slides</option>
+                <option value="Formal Shoes">Formal Shoes</option>
+            </optgroup>
+            <optgroup label="Accessories">
+                <option value="Bags & Backpacks">Bags & Backpacks</option>
+                <option value="Hats & Caps">Hats & Caps</option>
+                <option value="Belts">Belts</option>
+                <option value="Sunglasses">Sunglasses</option>
+                <option value="Jewelry">Jewelry</option>
+                <option value="Scarves & Gloves">Scarves & Gloves</option>
+                <option value="Socks">Socks</option>
+            </optgroup>
+            <optgroup label="Activewear">
+                <option value="Sports Tops">Sports Tops</option>
+                <option value="Sports Bottoms">Sports Bottoms</option>
+                <option value="Matching Sets">Matching Sets</option>
+            </optgroup>
+            <optgroup label="Underwear & Sleepwear">
+                <option value="Underwear">Underwear</option>
+                <option value="Bras">Bras</option>
+                <option value="Sleepwear & Loungewear">Sleepwear & Loungewear</option>
+            </optgroup>
+            <optgroup label="Shop By Collection">
+                <option value="New Arrivals">New Arrivals</option>
+                <option value="Best Sellers">Best Sellers</option>
+                <option value="Sale">Sale</option>
+                <option value="Streetwear">Streetwear</option>
+                <option value="Essentials/Basics">Essentials/Basics</option>
+            </optgroup>
+        </select>
+
+        <label>New Price (R)</label>
+        <input type="number" id="prodPrice" placeholder="350">
+
+        <label>Old Price (R) - Leave blank if no discount</label>
+        <input type="number" id="prodOldPrice" placeholder="400">
+
+        <label>Product Image (Leave blank to keep current image when editing)</label>
+        <input type="file" id="prodImage" accept="image/*">
+
+        <label>Select Available Sizes (Unchecked = Sold Out)</label>
+        <div class="checkbox-group">
+            <label><input type="checkbox" class="size-check" value="S" checked> S</label>
+            <label><input type="checkbox" class="size-check" value="M" checked> M</label>
+            <label><input type="checkbox" class="size-check" value="L" checked> L</label>
+            <label><input type="checkbox" class="size-check" value="XL" checked> XL</label>
+        </div>
+
+        <button onclick="uploadProduct()" id="submitBtn">Upload Product</button>
+        <button class="cancel-btn hidden" id="cancelEditBtn" onclick="resetForm()">Cancel Edit</button>
+
+        <div class="product-list" id="adminProductList">
+            <h3>Current Products</h3>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDc8RBSOsqaE2pt6Mu3ArKcTGHKf3z-vIs",
+            authDomain: "nexo-store-f602e.firebaseapp.com",
+            projectId: "nexo-store-f602e",
+            storageBucket: "nexo-store-f602e.firebasestorage.app",
+            messagingSenderId: "1000078334258",
+            appId: "1:1000078334258:web:a6205893309b4ff6445f2b"
+        };
+
+        const CLOUDINARY_CLOUD_NAME = "fznpolr3";
+        const CLOUDINARY_UPLOAD_PRESET = "nexo_upload";
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.checkPassword = function() {
+            const passwordInput = document.getElementById('adminPassword').value;
+            if (passwordInput === "GWPYBTIFOTWBY1!w") {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('adminContent').classList.remove('hidden');
+                loadAdminProducts();
+            } else {
+                alert("Incorrect Password");
+            }
+        };
+
+        window.uploadProduct = async function() {
+            const editId = document.getElementById('editId').value;
+            const title = document.getElementById('prodTitle').value;
+            const description = document.getElementById('prodDesc').value;
+            const category = document.getElementById('prodCategory').value;
+            const price = parseFloat(document.getElementById('prodPrice').value);
+            const oldPrice = document.getElementById('prodOldPrice').value ? parseFloat(document.getElementById('prodOldPrice').value) : null;
+            
+            const sizeChecks = document.querySelectorAll('.size-check');
+            let availableSizes = [];
+            sizeChecks.forEach(cb => {
+                if (cb.checked) availableSizes.push(cb.value);
+                else availableSizes.push(cb.value + '_disabled');
+            });
+
+            const file = document.getElementById('prodImage').files[0];
+
+            if (!title || !price) { alert("Fill in Title and Price."); return; }
+
+            try {
+                let imageUrl = null;
+                
+                if (file) {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+                    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    if (data.secure_url) {
+                        imageUrl = data.secure_url;
+                    } else {
+                        throw new Error("Cloudinary upload failed");
+                    }
+                }
+
+                if (editId) {
+                    const productRef = doc(db, "products", editId);
+                    const updateData = {
+                        title: title, description: description, category: category, 
+                        price: price, oldPrice: oldPrice, sizes: availableSizes
+                    };
+                    if (imageUrl) updateData.image = imageUrl;
+                    await updateDoc(productRef, updateData);
+                    alert("Product Updated!");
+                } else {
+                    if (!imageUrl) { alert("Please upload an image for new products."); return; }
+                    await addDoc(collection(db, "products"), {
+                        title: title, description: description, category: category, price: price, 
+                        oldPrice: oldPrice, sizes: availableSizes, image: imageUrl, feature: false
+                    });
+                    alert("Product Uploaded!");
+                }
+
+                window.location.reload();
+            } catch (error) {
+                console.error(error);
+                alert("Error: " + error.message);
+            }
+        };
+
+        async function loadAdminProducts() {
+            const querySnapshot = await getDocs(collection(db, "products"));
+            const list = document.getElementById('adminProductList');
+            list.innerHTML = '<h3>Current Products</h3>';
+            
+            querySnapshot.forEach((docSnap) => {
+                const prod = docSnap.data();
+                const div = document.createElement('div');
+                div.className = 'product-item';
+                div.innerHTML = `
+                    <span>${prod.title} - R${prod.price}</span>
+                    <div class="action-btns">
+                        <button class="edit-btn" onclick="editProduct('${docSnap.id}')">Edit</button>
+                        <button class="delete-btn" onclick="deleteProduct('${docSnap.id}')">Delete</button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        window.editProduct = async function(id) {
+            const docRef = doc(db, "products", id);
+            const docSnap = await getDoc(docRef);
+            
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                
+                document.getElementById('editId').value = id;
+                document.getElementById('prodTitle').value = data.title;
+                document.getElementById('prodDesc').value = data.description || "";
+                document.getElementById('prodCategory').value = data.category;
+                document.getElementById('prodPrice').value = data.price;
+                document.getElementById('prodOldPrice').value = data.oldPrice || "";
+                document.getElementById('prodImage').value = ""; 
+                
+                const sizeChecks = document.querySelectorAll('.size-check');
+                sizeChecks.forEach(cb => {
+                    if (data.sizes.includes(cb.value) && !data.sizes.includes(cb.value + '_disabled')) {
+                        cb.checked = true;
+                    } else {
+                        cb.checked = false;
+                    }
+                });
+
+                document.getElementById('formTitle').innerText = "Edit Product";
+                document.getElementById('submitBtn').innerText = "Save Changes";
+                document.getElementById('cancelEditBtn').classList.remove('hidden');
+                window.scrollTo(0, 0);
+            }
+        };
+
+        window.resetForm = function() {
+            document.getElementById('editId').value = "";
+            document.getElementById('prodTitle').value = "";
+            document.getElementById('prodDesc').value = "";
+            document.getElementById('prodPrice').value = "";
+            document.getElementById('prodOldPrice').value = "";
+            document.getElementById('prodImage').value = "";
+            document.querySelectorAll('.size-check').forEach(cb => cb.checked = true);
+            
+            document.getElementById('formTitle').innerText = "Upload New Product";
+            document.getElementById('submitBtn').innerText = "Upload Product";
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+        };
+
+        window.deleteProduct = async function(id) {
+            if(confirm("Delete this product permanently?")) {
+                await deleteDoc(doc(db, "products", id));
+                window.location.reload();
+            }
+        };
+    </script>
+</body>
+</html>
