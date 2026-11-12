@@ -229,7 +229,7 @@
             const toast = document.getElementById('toastMessage');
             toast.innerText = message;
             toast.classList.add('show');
-            setTimeout(() => { toast.classList.remove('show'); }, 3000);
+            setTimeout(() => { toast.classList.remove('show'); }, 4000);
         }
 
         window.checkPassword = function() {
@@ -280,7 +280,6 @@
                     if (orderDate >= oneDayAgo) rev24h += order.total;
                     if (orderDate >= sevenDaysAgo) {
                         rev7d += order.total;
-                        
                         const dayDiff = Math.floor((now - orderDate) / (1000 * 60 * 60 * 24));
                         if (dayDiff >= 0 && dayDiff < 7) {
                             chartData[6 - dayDiff] += order.total;
@@ -405,8 +404,13 @@
             
             showToast(`Uploading ${currentDrafts.length} products...`);
             
-            try {
-                for (let draft of currentDrafts) {
+            for (let i = 0; i < currentDrafts.length; i++) {
+                let draft = currentDrafts[i];
+                try {
+                    if (!draft.file) {
+                        throw new Error(`Draft "${draft.title}" has no image file attached.`);
+                    }
+
                     const formData = new FormData();
                     formData.append('file', draft.file);
                     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
@@ -417,23 +421,27 @@
                     });
                     
                     const data = await response.json();
-                    const imageUrl = data.secure_url;
+                    
+                    if (!response.ok) {
+                        throw new Error(data.error?.message || "Cloudinary upload failed. Check your preset settings.");
+                    }
 
                     await addDoc(collection(db, "products"), {
                         title: draft.title, description: draft.description, category: draft.category, 
                         price: draft.price, oldPrice: draft.oldPrice, sizes: draft.sizes, 
-                        images: [imageUrl], feature: false
+                        images: [data.secure_url], feature: false
                     });
+                    
+                } catch (error) {
+                    console.error("Draft Upload Error:", error);
+                    showToast(`Error: ${error.message}`);
+                    return; // Stop the loop so you can fix the error
                 }
-                
-                currentDrafts = [];
-                saveDraftsToMemory();
-                showToast("All Drafts Uploaded Successfully!");
-                
-            } catch (error) {
-                console.error(error);
-                showToast("Error uploading drafts.");
             }
+            
+            currentDrafts = [];
+            saveDraftsToMemory();
+            showToast("All Drafts Uploaded Successfully!");
         }
 
         window.publishImmediately = async function() {
@@ -469,6 +477,7 @@
                         });
                         
                         const data = await response.json();
+                        if (!response.ok) throw new Error(data.error?.message || "Image upload failed.");
                         if (data.secure_url) imageUrls.push(data.secure_url);
                     }
                 }
@@ -480,7 +489,6 @@
                 }
 
                 if (editId) {
-                    // UPDATE EXISTING PRODUCT
                     const productRef = doc(db, "products", editId);
                     const updateData = {
                         title: title, description: description, category: category, 
@@ -490,7 +498,6 @@
                     await updateDoc(productRef, updateData);
                     showToast("Product Updated!");
                 } else {
-                    // CREATE NEW PRODUCT
                     if (finalImages.length === 0) { showToast("Please upload an image for new products."); return; }
                     await addDoc(collection(db, "products"), {
                         title: title, description: description, category: category, price: price, 
@@ -535,7 +542,6 @@
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 
-                // Switch to upload tab
                 document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
                 document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
                 document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
@@ -548,7 +554,6 @@
                 document.getElementById('prodPrice').value = data.price;
                 document.getElementById('prodOldPrice').value = data.oldPrice || "";
                 
-                // Update sizes to match category
                 updateSizeOptions();
                 const sizeChecks = document.querySelectorAll('.size-check');
                 sizeChecks.forEach(cb => {
