@@ -130,10 +130,15 @@
         .menu-link:active, .menu-link:hover { color: var(--bv-green); letter-spacing: 3px; }
         
         .dropdown-container { display: flex; flex-direction: column; align-items: center; width: 100%; }
-        .dropdown-content { display: none; background: rgba(255,255,255,0.05); padding: 15px; margin-top: 10px; border-radius: 5px; font-family: 'Inter', sans-serif; font-size: 0.9rem; color: var(--text-muted); text-align: center; width: 100%; }
-        .dropdown-content p { margin-bottom: 5px; }
+        .dropdown-content { display: none; background: rgba(255,255,255,0.05); padding: 15px; margin-top: 10px; border-radius: 5px; font-family: 'Inter', sans-serif; font-size: 0.85rem; color: var(--text-muted); text-align: left; width: 100%; }
+        .dropdown-content p { margin-bottom: 10px; line-height: 1.5; }
         .dropdown-content strong { color: var(--text-cream); }
-        .dropdown-content em { color: var(--bv-green); font-style: normal; font-weight: bold; display: block; margin-bottom: 10px; }
+        .dropdown-content em { color: var(--bv-green); font-style: normal; font-weight: bold; display: block; margin-bottom: 10px; text-align: center; }
+
+        /* CHECKBOX STYLES */
+        .policy-checkbox-container { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .policy-checkbox-label { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: var(--text-cream); cursor: pointer; }
+        .policy-checkbox-label input { accent-color: var(--bv-green); width: 16px; height: 16px; }
 
         .brand-story-text { font-family: 'Inter', sans-serif; font-size: 0.8rem; line-height: 1.6; color: var(--text-muted); text-align: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
 
@@ -328,10 +333,25 @@
             <div class="dropdown-container">
                 <button class="menu-link" onclick="toggleDropdown('policyDropdown', this)">Policies &#9662;</button>
                 <div class="dropdown-content" id="policyDropdown">
-                    <em>In collaboration with WOW Fashion</em>
-                    <p style="cursor:pointer;" onclick="showPage('home'); toggleMenu()">Terms of Service</p>
-                    <p style="cursor:pointer;" onclick="showPage('home'); toggleMenu()">Privacy Policy</p>
-                    <p style="cursor:pointer;" onclick="showPage('home'); toggleMenu()">Cookie Policy</p>
+                    <em>Temu-Style Legal Information</em>
+                    <p><strong>Terms of Service:</strong> By accessing NeXo, you agree to our terms. All purchases are subject to availability. Prices are in ZAR and may change without notice. We reserve the right to refuse service to anyone.</p>
+                    <p><strong>Privacy Policy:</strong> We value your privacy. Your email and delivery address are used strictly for fulfilling your order and sending tracking updates. We do not sell your data to third parties.</p>
+                    <p><strong>Cookie Policy:</strong> We use cookies to keep items in your cart and remember your preferences. By continuing to use our site, you consent to our use of cookies.</p>
+                    
+                    <div class="policy-checkbox-container">
+                        <label class="policy-checkbox-label">
+                            <input type="checkbox" id="termsCheck" onchange="checkPolicies()">
+                            I have read and agree to the Terms of Service.
+                        </label>
+                        <label class="policy-checkbox-label">
+                            <input type="checkbox" id="privacyCheck" onchange="checkPolicies()">
+                            I have read and agree to the Privacy Policy.
+                        </label>
+                        <label class="policy-checkbox-label">
+                            <input type="checkbox" id="cookieCheck" onchange="checkPolicies()">
+                            I accept the Cookie Policy.
+                        </label>
+                    </div>
                 </div>
             </div>
 
@@ -394,6 +414,16 @@
                 searchProducts();
             }
         }
+
+        function checkPolicies() {
+            const terms = document.getElementById('termsCheck').checked;
+            const privacy = document.getElementById('privacyCheck').checked;
+            const cookies = document.getElementById('cookieCheck').checked;
+
+            if (terms && privacy && cookies) {
+                showToast("Policies Accepted");
+            }
+        }
     </script>
 
     <script type="module">
@@ -423,7 +453,6 @@
             querySnapshot.forEach((doc) => {
                 products.push({ id: doc.id, ...doc.data() });
             });
-            // Sort so the newest uploaded product is always first
             products.sort((a, b) => (b.id > a.id ? 1 : -1));
             renderHome();
         }
@@ -443,7 +472,6 @@
                 card.className = index === 0 ? 'product-card feature-card' : 'product-card';
                 card.onclick = () => showProduct(p.id);
                 
-                // Use the first image in the array as the thumbnail
                 const thumbImage = p.images && p.images.length > 0 ? p.images[0] : 'https://placehold.co/400x500/121212/f4f1ea?text=No+Image';
 
                 const priceHTML = p.oldPrice 
@@ -573,13 +601,11 @@
             currentProduct = products.find(p => p.id === id);
             selectedSize = null;
             
-            // Set the main image to the thumbnail
             const mainImgSrc = currentProduct.images && currentProduct.images.length > 0 ? currentProduct.images[0] : 'https://placehold.co/400x500/121212/f4f1ea?text=No+Image';
             document.getElementById('detailImg').src = mainImgSrc;
             document.getElementById('detailTitle').innerText = currentProduct.title;
             document.getElementById('detailDesc').innerText = currentProduct.description || 'Premium quality streetwear.';
             
-            // Build the image gallery
             const galleryContainer = document.getElementById('detailGallery');
             galleryContainer.innerHTML = '';
             if (currentProduct.images && currentProduct.images.length > 1) {
@@ -597,7 +623,6 @@
             
             document.getElementById('detailPrice').innerHTML = priceHTML;
             
-            // Generate Size buttons
             const sizesContainer = document.getElementById('detailSizes');
             sizesContainer.innerHTML = '';
             sizesContainer.style.gridTemplateColumns = `repeat(${currentProduct.sizes.length > 4 ? 5 : 4}, 1fr)`;
@@ -637,7 +662,6 @@
             const modal = document.getElementById('sizeModal');
             const content = document.getElementById('sizeGuideContent');
             
-            // Determine which size chart to show based on the product category
             if (currentProduct && currentProduct.category === 'Footwear') {
                 content.innerHTML = `
                     <table>
