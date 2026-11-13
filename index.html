@@ -66,26 +66,10 @@
         .main-image-container { width: 100%; height: auto; max-height: 70vh; background-color: var(--bg-card); display: block; overflow: hidden; }
         .main-image-container img { width: 100%; height: 100%; object-fit: contain; display: block; }
         
-        .image-gallery { 
-            display: flex; 
-            gap: 10px; 
-            padding: 15px; 
-            overflow-x: auto; 
-            background: #0d0d0d; 
-            scroll-snap-type: x mandatory;
-        }
+        .image-gallery { display: flex; gap: 10px; padding: 15px; overflow-x: auto; background: #0d0d0d; scroll-snap-type: x mandatory; }
         .image-gallery::-webkit-scrollbar { height: 4px; }
         .image-gallery::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        .image-gallery img { 
-            width: 80px; 
-            height: 100px; 
-            object-fit: cover; 
-            cursor: pointer; 
-            border: 1px solid #333; 
-            transition: 0.3s; 
-            flex-shrink: 0;
-            scroll-snap-align: start;
-        }
+        .image-gallery img { width: 80px; height: 100px; object-fit: cover; cursor: pointer; border: 1px solid #333; transition: 0.3s; flex-shrink: 0; scroll-snap-align: start; }
         .image-gallery img:hover { border-color: var(--bv-green); }
 
         .product-detail-info { padding: 30px 20px; }
@@ -327,9 +311,19 @@
         </div>
     </div>
 
+    <!-- SIDE MENU -->
     <div class="side-menu" id="sideMenu">
         <div class="menu-watermark">NeXo</div>
         <button class="close-btn" onclick="toggleMenu()">&times;</button>
+        
+        <!-- MY ACCOUNT SECTION -->
+        <div id="accountSection" style="width: 100%; max-width: 300px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 5px; margin-bottom: 20px; text-align: center;">
+            <p style="font-size: 0.8rem; color: var(--bv-green); font-weight: bold; margin-bottom: 5px;">MY ACCOUNT</p>
+            <p id="userEmailDisplay" style="font-size: 0.9rem; color: var(--text-cream); margin-bottom: 10px;">Not signed in</p>
+            <button id="googleSignInBtn" onclick="signInWithGoogle()" style="width: 100%; padding: 10px; background: #fff; color: #333; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Sign in with Google</button>
+            <button id="signOutBtn" onclick="signOutUser()" style="width: 100%; padding: 10px; background: #ff4d4d; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; display: none;">Sign Out</button>
+        </div>
+
         <div class="side-menu-links">
             <button class="menu-link" onclick="showPage('home'); toggleMenu()">Products</button>
             
@@ -460,6 +454,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDc8RBSOsqaE2pt6Mu3ArKcTGHKf3z-vIs",
@@ -472,6 +467,8 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
 
         let products = [];
         let currentProduct = null;
@@ -479,6 +476,39 @@
         let detailQuantity = 1;
         let cart = JSON.parse(localStorage.getItem('nexoCart')) || [];
 
+        // --- GOOGLE AUTH ---
+        window.signInWithGoogle = function() {
+            signInWithPopup(auth, provider)
+                .then((result) => {
+                    showToast(`Welcome ${result.user.displayName || result.user.email}`);
+                }).catch((error) => {
+                    showToast("Error: " + error.message);
+                });
+        };
+
+        window.signOutUser = function() {
+            signOut(auth).then(() => {
+                showToast("Signed out");
+            });
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            const emailDisplay = document.getElementById('userEmailDisplay');
+            const signInBtn = document.getElementById('googleSignInBtn');
+            const signOutBtn = document.getElementById('signOutBtn');
+
+            if (user) {
+                emailDisplay.innerText = user.email;
+                signInBtn.style.display = 'none';
+                signOutBtn.style.display = 'block';
+            } else {
+                emailDisplay.innerText = 'Not signed in';
+                signInBtn.style.display = 'block';
+                signOutBtn.style.display = 'none';
+            }
+        });
+
+        // --- STORE LOGIC ---
         async function fetchProducts() {
             const querySnapshot = await getDocs(collection(db, "products"));
             products = [];
