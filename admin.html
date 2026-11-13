@@ -56,6 +56,11 @@
         .luxury-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
         
         .hidden { display: none; }
+
+        /* PASSWORD EYE ICON CSS */
+        .password-container { position: relative; margin-bottom: 15px; }
+        .password-container input { margin-bottom: 0; padding-right: 40px; }
+        .eye-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; width: 20px; height: 20px; fill: var(--text-muted); }
     </style>
 </head>
 <body>
@@ -70,8 +75,12 @@
             <label>Email or Phone</label>
             <input type="text" id="authEmail" placeholder="Enter email or phone number">
             <label>Password</label>
-            <input type="password" id="authPassword" placeholder="Enter password">
+            <div class="password-container">
+                <input type="password" id="authPassword" placeholder="Enter password">
+                <svg class="eye-icon" onclick="togglePassword('authPassword', this)" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </div>
             <button onclick="loginUser()">Login</button>
+            <button onclick="signInWithGoogle()" style="background: #fff; color: #333; margin-top: 10px;">Sign in with Google</button>
             <p style="text-align: center; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; margin-top: 10px;" onclick="toggleAuthMode()">Don't have an account? Sign Up</p>
         </div>
 
@@ -79,8 +88,12 @@
             <label>Email or Phone</label>
             <input type="text" id="signUpEmail" placeholder="Enter email or phone number">
             <label>Password</label>
-            <input type="password" id="signUpPassword" placeholder="Create a password">
+            <div class="password-container">
+                <input type="password" id="signUpPassword" placeholder="Create a password">
+                <svg class="eye-icon" onclick="togglePassword('signUpPassword', this)" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </div>
             <button onclick="signUpUser()">Create Account</button>
+            <button onclick="signInWithGoogle()" style="background: #fff; color: #333; margin-top: 10px;">Sign up with Google</button>
             <p style="text-align: center; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; margin-top: 10px;" onclick="toggleAuthMode()">Already have an account? Login</p>
         </div>
     </div>
@@ -194,7 +207,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDc8RBSOsqaE2pt6Mu3ArKcTGHKf3z-vIs",
@@ -211,6 +224,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
 
         let currentDrafts = JSON.parse(localStorage.getItem('nexoDrafts')) || [];
         let myChart = null;
@@ -219,6 +233,18 @@
             clothing: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
             shoes: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14'],
             caps: ['S/M', 'L/XL', 'One Size']
+        };
+
+        // --- PASSWORD EYE TOGGLE ---
+        window.togglePassword = function(inputId, iconElement) {
+            const input = document.getElementById(inputId);
+            if (input.type === "password") {
+                input.type = "text";
+                iconElement.style.fill = "var(--bv-green)";
+            } else {
+                input.type = "password";
+                iconElement.style.fill = "var(--text-muted)";
+            }
         };
 
         window.toggleAuthMode = function() {
@@ -233,19 +259,15 @@
             const password = document.getElementById('signUpPassword').value;
 
             let email = emailInput;
-            if (!email.includes('@')) {
-                email = `${emailInput}@nexo-phone.com`;
-            }
+            if (!email.includes('@')) { email = `${emailInput}@nexo-phone.com`; }
 
             createUserWithEmailAndPassword(auth, email, password)
-                .then((userCredential) => {
+                .then(() => {
                     showToast("Account Created Successfully!");
                     document.getElementById('signUpForm').classList.add('hidden');
                     document.getElementById('loginForm').classList.remove('hidden');
                 })
-                .catch((error) => {
-                    showToast("Error: " + error.message);
-                });
+                .catch((error) => { showToast("Error: " + error.message); });
         };
 
         // --- LOGIN ---
@@ -254,16 +276,19 @@
             const password = document.getElementById('authPassword').value;
 
             let email = emailInput;
-            if (!email.includes('@')) {
-                email = `${emailInput}@nexo-phone.com`;
-            }
+            if (!email.includes('@')) { email = `${emailInput}@nexo-phone.com`; }
 
             signInWithEmailAndPassword(auth, email, password)
-                .then((userCredential) => {
-                    showToast("Login Successful");
-                })
-                .catch((error) => {
-                    showToast("Access Denied: " + error.message);
+                .then(() => { showToast("Login Successful"); })
+                .catch((error) => { showToast("Access Denied: " + error.message); });
+        };
+
+        window.signInWithGoogle = function() {
+            signInWithPopup(auth, provider)
+                .then((result) => {
+                    showToast(`Welcome ${result.user.displayName || result.user.email}`);
+                }).catch((error) => {
+                    showToast("Error: " + error.message);
                 });
         };
 
@@ -279,7 +304,7 @@
             if (user) {
                 document.getElementById('authScreen').classList.add('hidden');
                 
-                // ADMIN OVERRIDE
+                // ADMIN OVERRIDE: Only you can see the dashboard
                 if (user.email === "nexodigitalagencyza@gmail.com") {
                     document.getElementById('adminContent').classList.remove('hidden');
                     updateSizeOptions();
