@@ -649,7 +649,6 @@
                     img.src = imgUrl;
                     img.onclick = () => { 
                         document.getElementById('detailImg').src = imgUrl; 
-                        // Scroll active image into view
                         img.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
                     };
                     galleryContainer.appendChild(img);
