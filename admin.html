@@ -62,14 +62,35 @@
 
     <div id="toastMessage" class="luxury-toast"></div>
 
-    <div id="loginScreen" class="container">
-        <h2>Admin Login</h2>
-        <input type="password" id="adminPassword" placeholder="Enter Password">
-        <button onclick="checkPassword()">Login</button>
+    <!-- LOGIN / SIGN UP SCREEN -->
+    <div id="authScreen" class="container">
+        <h2 id="authTitle">Admin Login</h2>
+        
+        <div id="loginForm">
+            <label>Email or Phone</label>
+            <input type="text" id="authEmail" placeholder="Enter email or phone number">
+            <label>Password</label>
+            <input type="password" id="authPassword" placeholder="Enter password">
+            <button onclick="loginUser()">Login</button>
+            <p style="text-align: center; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; margin-top: 10px;" onclick="toggleAuthMode()">Don't have an account? Sign Up</p>
+        </div>
+
+        <div id="signUpForm" class="hidden">
+            <label>Email or Phone</label>
+            <input type="text" id="signUpEmail" placeholder="Enter email or phone number">
+            <label>Password</label>
+            <input type="password" id="signUpPassword" placeholder="Create a password">
+            <button onclick="signUpUser()">Create Account</button>
+            <p style="text-align: center; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; margin-top: 10px;" onclick="toggleAuthMode()">Already have an account? Login</p>
+        </div>
     </div>
 
+    <!-- DASHBOARD (Hidden until logged in) -->
     <div id="adminContent" class="container hidden">
-        <h2>NeXo Admin Control</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin: 0;">NeXo Admin</h2>
+            <button onclick="logoutUser()" style="width: auto; padding: 8px 15px; background: #ff4d4d; font-size: 0.8rem;">Logout</button>
+        </div>
         
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
@@ -135,7 +156,7 @@
             <label>Old Price (R) - Leave blank if no discount</label>
             <input type="number" id="prodOldPrice" placeholder="400">
 
-            <label>Product Images (Select Multiple - Leave blank to keep current images)</label>
+            <label>Product Images (Select Multiple)</label>
             <input type="file" id="prodImages" accept="image/*" multiple>
 
             <label>Choose Thumbnail (Only for new uploads)</label>
@@ -173,6 +194,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDc8RBSOsqaE2pt6Mu3ArKcTGHKf3z-vIs",
@@ -188,6 +210,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
 
         let currentDrafts = JSON.parse(localStorage.getItem('nexoDrafts')) || [];
         let myChart = null;
@@ -198,6 +221,86 @@
             caps: ['S/M', 'L/XL', 'One Size']
         };
 
+        window.toggleAuthMode = function() {
+            document.getElementById('loginForm').classList.toggle('hidden');
+            document.getElementById('signUpForm').classList.toggle('hidden');
+            document.getElementById('authTitle').innerText = document.getElementById('loginForm').classList.contains('hidden') ? "Create Account" : "Admin Login";
+        };
+
+        // --- SIGN UP ---
+        window.signUpUser = function() {
+            const emailInput = document.getElementById('signUpEmail').value.trim();
+            const password = document.getElementById('signUpPassword').value;
+
+            let email = emailInput;
+            if (!email.includes('@')) {
+                email = `${emailInput}@nexo-phone.com`;
+            }
+
+            createUserWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    showToast("Account Created Successfully!");
+                    document.getElementById('signUpForm').classList.add('hidden');
+                    document.getElementById('loginForm').classList.remove('hidden');
+                })
+                .catch((error) => {
+                    showToast("Error: " + error.message);
+                });
+        };
+
+        // --- LOGIN ---
+        window.loginUser = function() {
+            const emailInput = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value;
+
+            let email = emailInput;
+            if (!email.includes('@')) {
+                email = `${emailInput}@nexo-phone.com`;
+            }
+
+            signInWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    showToast("Login Successful");
+                })
+                .catch((error) => {
+                    showToast("Access Denied: " + error.message);
+                });
+        };
+
+        window.logoutUser = function() {
+            signOut(auth).then(() => {
+                showToast("Logged out");
+                window.location.reload();
+            });
+        };
+
+        // --- AUTH STATE CHANGE ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('authScreen').classList.add('hidden');
+                
+                // ADMIN OVERRIDE
+                if (user.email === "nexodigitalagencyza@gmail.com") {
+                    document.getElementById('adminContent').classList.remove('hidden');
+                    updateSizeOptions();
+                    loadDashboard();
+                } else {
+                    document.body.innerHTML = `
+                        <div class="container" style="text-align: center; margin-top: 100px;">
+                            <h2>Welcome, ${user.email}</h2>
+                            <p style="color: var(--text-muted); margin-bottom: 20px;">You are successfully logged in as a customer.</p>
+                            <a href="index.html" style="color: var(--bv-green); font-weight: bold;">Go to Store</a>
+                            <button onclick="logoutUser()" style="width: auto; padding: 10px 20px; margin-top: 20px; background: #ff4d4d;">Logout</button>
+                        </div>
+                    `;
+                }
+            } else {
+                document.getElementById('authScreen').classList.remove('hidden');
+                document.getElementById('adminContent').classList.add('hidden');
+            }
+        });
+
+        // --- TABS & UI ---
         window.switchTab = function(tabId) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -231,18 +334,6 @@
             toast.classList.add('show');
             setTimeout(() => { toast.classList.remove('show'); }, 4000);
         }
-
-        window.checkPassword = function() {
-            const passwordInput = document.getElementById('adminPassword').value;
-            if (passwordInput === "GWPYBTIFOTWBY1!w") {
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('adminContent').classList.remove('hidden');
-                updateSizeOptions();
-                loadDashboard();
-            } else {
-                showToast("Incorrect Password");
-            }
-        };
 
         // --- DASHBOARD LOGIC & CHART ---
         async function loadDashboard() {
@@ -423,7 +514,7 @@
                     const data = await response.json();
                     
                     if (!response.ok) {
-                        throw new Error(data.error?.message || "Cloudinary upload failed. Check your preset settings.");
+                        throw new Error(data.error?.message || "Cloudinary upload failed.");
                     }
 
                     await addDoc(collection(db, "products"), {
@@ -435,7 +526,7 @@
                 } catch (error) {
                     console.error("Draft Upload Error:", error);
                     showToast(`Error: ${error.message}`);
-                    return; // Stop the loop so you can fix the error
+                    return; 
                 }
             }
             
