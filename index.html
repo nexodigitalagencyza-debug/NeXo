@@ -179,11 +179,35 @@
         .contact-icon { width: 18px; height: 18px; fill: var(--bv-green); transition: fill 0.3s; }
         .contact-link:hover .contact-icon { fill: var(--text-cream); }
         .contact-link:hover span { color: var(--text-cream); }
+
+        /* WELCOME POPUP STYLES */
+        .welcome-popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 200000; display: none; align-items: center; justify-content: center; }
+        .welcome-popup-overlay.active { display: flex; }
+        .welcome-popup { background: var(--bg-card); padding: 40px 30px; border: 1px solid #333; border-radius: 8px; width: 90%; max-width: 400px; position: relative; text-align: center; }
+        .welcome-popup h2 { font-family: 'Playfair Display', serif; font-size: 1.8rem; margin-bottom: 10px; color: var(--text-cream); }
+        .welcome-popup p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 25px; line-height: 1.5; }
+        .welcome-popup button { width: 100%; padding: 15px; background: #fff; color: #333; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px; transition: 0.3s; }
+        .welcome-popup button:hover { background: #eee; }
+        .welcome-popup .skip-btn { background: transparent; color: var(--text-muted); font-size: 0.8rem; text-decoration: underline; margin-bottom: 0; font-weight: normal; }
+        .welcome-popup .skip-btn:hover { color: var(--text-cream); background: transparent; }
     </style>
 </head>
 <body>
 
     <div id="toastMessage" class="luxury-toast"></div>
+
+    <!-- WELCOME POPUP -->
+    <div id="welcomePopup" class="welcome-popup-overlay">
+        <div class="welcome-popup">
+            <h2>Welcome to NeXo</h2>
+            <p>Sign in to save your cart, track orders, and get exclusive access to drops.</p>
+            <button onclick="signInWithGoogle()">
+                <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Sign in with Google
+            </button>
+            <button class="skip-btn" onclick="closeWelcomePopup()">Continue as Guest</button>
+        </div>
+    </div>
 
     <div id="sizeModal" class="size-modal-overlay">
         <div class="size-modal">
@@ -311,12 +335,10 @@
         </div>
     </div>
 
-    <!-- SIDE MENU -->
     <div class="side-menu" id="sideMenu">
         <div class="menu-watermark">NeXo</div>
         <button class="close-btn" onclick="toggleMenu()">&times;</button>
         
-        <!-- MY ACCOUNT SECTION -->
         <div id="accountSection" style="width: 100%; max-width: 300px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 5px; margin-bottom: 20px; text-align: center;">
             <p style="font-size: 0.8rem; color: var(--bv-green); font-weight: bold; margin-bottom: 5px;">MY ACCOUNT</p>
             <p id="userEmailDisplay" style="font-size: 0.9rem; color: var(--text-cream); margin-bottom: 10px;">Not signed in</p>
@@ -449,6 +471,20 @@
                 showToast("Policies Accepted");
             }
         }
+
+        // --- WELCOME POPUP LOGIC ---
+        window.closeWelcomePopup = function() {
+            document.getElementById('welcomePopup').classList.remove('active');
+            // Save to local storage so it doesn't pop up every single time they refresh
+            localStorage.setItem('nexoWelcomeSeen', 'true');
+        };
+
+        // Show popup on load if they haven't seen it
+        if (!localStorage.getItem('nexoWelcomeSeen')) {
+            setTimeout(() => {
+                document.getElementById('welcomePopup').classList.add('active');
+            }, 1000); // Slight delay for smooth entrance
+        }
     </script>
 
     <script type="module">
@@ -475,12 +511,14 @@
         let selectedSize = null;
         let detailQuantity = 1;
         let cart = JSON.parse(localStorage.getItem('nexoCart')) || [];
+        let currentUserEmail = null;
 
         // --- GOOGLE AUTH ---
         window.signInWithGoogle = function() {
             signInWithPopup(auth, provider)
                 .then((result) => {
                     showToast(`Welcome ${result.user.displayName || result.user.email}`);
+                    closeWelcomePopup(); // Close popup upon successful login
                 }).catch((error) => {
                     showToast("Error: " + error.message);
                 });
@@ -498,10 +536,18 @@
             const signOutBtn = document.getElementById('signOutBtn');
 
             if (user) {
+                currentUserEmail = user.email;
                 emailDisplay.innerText = user.email;
                 signInBtn.style.display = 'none';
                 signOutBtn.style.display = 'block';
+                
+                // Auto-fill checkout email if the input exists
+                const checkoutEmailInput = document.getElementById('userEmail');
+                if (checkoutEmailInput) {
+                    checkoutEmailInput.value = user.email;
+                }
             } else {
+                currentUserEmail = null;
                 emailDisplay.innerText = 'Not signed in';
                 signInBtn.style.display = 'block';
                 signOutBtn.style.display = 'none';
