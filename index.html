@@ -196,7 +196,6 @@
 
     <div id="toastMessage" class="luxury-toast"></div>
 
-    <!-- WELCOME POPUP -->
     <div id="welcomePopup" class="welcome-popup-overlay">
         <div class="welcome-popup">
             <h2>Welcome to NeXo</h2>
@@ -472,18 +471,15 @@
             }
         }
 
-        // --- WELCOME POPUP LOGIC ---
         window.closeWelcomePopup = function() {
             document.getElementById('welcomePopup').classList.remove('active');
-            // Save to local storage so it doesn't pop up every single time they refresh
             localStorage.setItem('nexoWelcomeSeen', 'true');
         };
 
-        // Show popup on load if they haven't seen it
         if (!localStorage.getItem('nexoWelcomeSeen')) {
             setTimeout(() => {
                 document.getElementById('welcomePopup').classList.add('active');
-            }, 1000); // Slight delay for smooth entrance
+            }, 1000);
         }
     </script>
 
@@ -513,12 +509,11 @@
         let cart = JSON.parse(localStorage.getItem('nexoCart')) || [];
         let currentUserEmail = null;
 
-        // --- GOOGLE AUTH ---
         window.signInWithGoogle = function() {
             signInWithPopup(auth, provider)
                 .then((result) => {
                     showToast(`Welcome ${result.user.displayName || result.user.email}`);
-                    closeWelcomePopup(); // Close popup upon successful login
+                    closeWelcomePopup();
                 }).catch((error) => {
                     showToast("Error: " + error.message);
                 });
@@ -541,7 +536,6 @@
                 signInBtn.style.display = 'none';
                 signOutBtn.style.display = 'block';
                 
-                // Auto-fill checkout email if the input exists
                 const checkoutEmailInput = document.getElementById('userEmail');
                 if (checkoutEmailInput) {
                     checkoutEmailInput.value = user.email;
@@ -554,7 +548,6 @@
             }
         });
 
-        // --- STORE LOGIC ---
         async function fetchProducts() {
             const querySnapshot = await getDocs(collection(db, "products"));
             products = [];
@@ -939,7 +932,7 @@
             document.getElementById('cartCount').innerText = totalItems;
         }
 
-        window.processPayment = async function() {
+        window.processPayment = function() {
             if (cart.length === 0) return;
 
             const email = document.getElementById('userEmail').value.trim();
@@ -959,8 +952,9 @@
             const randomNumbers = Math.floor(10000 + Math.random() * 90000);
             const orderNumber = `NXO${randomNumbers}`;
 
+            // SAVE ORDER TO FIREBASE (As Pending)
             try {
-                await addDoc(collection(db, "orders"), {
+                addDoc(collection(db, "orders"), {
                     orderNumber: orderNumber,
                     email: email,
                     street: street,
@@ -971,47 +965,55 @@
                     shipping: 140,
                     total: total,
                     items: cart,
-                    date: new Date().toISOString()
+                    date: new Date().toISOString(),
+                    status: "Pending Payment"
                 });
             } catch (error) {
                 console.error("Error saving order:", error);
             }
 
-            let message = `*NEW ORDER: ${orderNumber}*\n\n`;
-            message += `*Customer Details:*\n`;
-            message += `Email: ${email}\n\n`;
-            message += `*Delivery Address:*\n`;
-            message += `Street: ${street}\n`;
-            message += `City/Town: ${city}\n`;
-            message += `Postal Code: ${postal}\n`;
-            message += `Courier: ${courier}\n\n`;
-            message += `*Order Summary:*\n`;
+            // --- PAYFAST INTEGRATION ---
+            const payfastMerchantId = "37987011"; // YOUR MERCHANT ID
+            const payfastMerchantKey = "dqygmun3y4uao"; // YOUR MERCHANT KEY
+            const isSandbox = false; // SET TO FALSE FOR LIVE PAYMENTS
 
-            cart.forEach(item => {
-                message += `- ${item.title} (Size: ${item.size}) x${item.quantity} = R ${(item.price * item.quantity).toFixed(2)}\n`;
-            });
+            const payfastUrl = isSandbox 
+                ? "https://sandbox.payfast.co.za/eng/process" 
+                : "https://www.payfast.co.za/eng/process";
 
-            message += `\n*Subtotal:* R ${subtotal.toFixed(2)}\n`;
-            message += `*Shipping:* R 140.00\n`;
-            message += `*TOTAL:* R ${total.toFixed(2)}\n`;
+            const form = document.createElement('form');
+            form.action = payfastUrl;
+            form.method = 'POST';
 
-            const encodedMessage = encodeURIComponent(message);
-            const whatsappUrl = `https://wa.me/27817217316?text=${encodedMessage}`;
+            const fields = {
+                merchant_id: payfastMerchantId,
+                merchant_key: payfastMerchantKey,
+                return_url: window.location.origin + '/index.html', 
+                cancel_url: window.location.origin + '/index.html', 
+                name_first: "Customer",
+                email_address: email,
+                m_payment_id: orderNumber,
+                amount: total.toFixed(2),
+                item_name: `NeXo Order ${orderNumber}`,
+                item_description: `${cart.length} items - Courier: ${courier}`
+            };
 
-            showToast("Order Placed. Redirecting to WhatsApp...");
+            for (const key in fields) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = fields[key];
+                form.appendChild(input);
+            }
+
+            document.body.appendChild(form);
+            
+            showToast("Redirecting to PayFast...");
+            
+            form.submit();
             
             cart = [];
             saveCart();
-            
-            document.getElementById('userEmail').value = '';
-            document.getElementById('userStreet').value = '';
-            document.getElementById('userCity').value = '';
-            document.getElementById('userPostal').value = '';
-
-            setTimeout(() => {
-                window.open(whatsappUrl, '_blank');
-                showPage('home');
-            }, 2000);
         }
 
         fetchProducts();
