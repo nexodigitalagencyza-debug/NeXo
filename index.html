@@ -144,6 +144,7 @@
         .tracking-result h3 { color: var(--bv-green); margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 10px; }
         .tracking-detail { margin-bottom: 10px; font-size: 0.9rem; }
         .tracking-detail span { color: var(--text-muted); display: block; font-size: 0.8rem; }
+        .tracking-link { color: var(--bv-green); text-decoration: underline; font-weight: bold; }
 
         /* MESSAGING PAGE STYLES */
         .message-view { padding: 30px 20px; max-width: 600px; margin: 0 auto; height: 80vh; display: flex; flex-direction: column; }
@@ -352,8 +353,8 @@
 
                     <label style="font-size: 0.8rem; color: var(--text-muted); margin-top: 15px;">Select Courier</label>
                     <div class="courier-options">
-                        <label class="courier-radio"><input type="radio" name="courier" value="PEXI" checked> PEXI</label>
-                        <label class="courier-radio"><input type="radio" name="courier" value="The Courier Guy"> The Courier Guy</label>
+                        <label class="courier-radio"><input type="radio" name="courier" value="The Courier Guy" checked> The Courier Guy</label>
+                        <label class="courier-radio"><input type="radio" name="courier" value="Fastway"> Fastway</label>
                     </div>
 
                     <button class="checkout-btn" onclick="processPayment()">Secure Checkout</button>
@@ -1115,12 +1116,26 @@
                 document.getElementById('trackStatus').innerText = order.status;
                 document.getElementById('trackCourier').innerText = order.courier;
                 
+                const trackNumElement = document.getElementById('trackNumber');
+                
                 if (order.trackingNumber) {
-                    document.getElementById('trackNumber').innerText = order.trackingNumber;
-                    document.getElementById('trackNumber').style.color = "var(--bv-green)";
+                    trackNumElement.innerText = order.trackingNumber;
+                    trackNumElement.style.color = "var(--bv-green)";
+                    
+                    // Create a clickable link based on the courier
+                    let trackingUrl = "";
+                    if (order.courier === "The Courier Guy") {
+                        trackingUrl = `https://www.thecourierguy.co.za/tracking/?waybill=${order.trackingNumber}`;
+                    } else if (order.courier === "Fastway") {
+                        trackingUrl = `https://www.fastway.co.za/track-and-trace/?trackingNumber=${order.trackingNumber}`;
+                    }
+
+                    if (trackingUrl) {
+                        trackNumElement.innerHTML = `<a href="${trackingUrl}" target="_blank" class="tracking-link">${order.trackingNumber} (Click to Track)</a>`;
+                    }
                 } else {
-                    document.getElementById('trackNumber').innerText = "Waiting for courier pickup...";
-                    document.getElementById('trackNumber').style.color = "var(--text-muted)";
+                    trackNumElement.innerText = "Waiting for courier pickup...";
+                    trackNumElement.style.color = "var(--text-muted)";
                 }
             });
 
@@ -1136,7 +1151,7 @@
                 return;
             }
 
-            if (unsubscribeMessages) unsubscribeMessages(); // Clear previous listener
+            if (unsubscribeMessages) unsubscribeMessages(); 
 
             const q = query(collection(db, "messages"), where("email", "==", currentUserEmail));
             
@@ -1149,7 +1164,6 @@
                     return;
                 }
 
-                // Sort by timestamp (oldest first)
                 const msgs = [];
                 snapshot.forEach(doc => msgs.push(doc.data()));
                 msgs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
