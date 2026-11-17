@@ -276,7 +276,7 @@
                     document.getElementById('adminContent').classList.remove('hidden');
                     updateSizeOptions();
                     loadDashboard();
-                    loadChatUsers(); // Load users for the chat dropdown
+                    loadChatUsers(); 
                 } else {
                     document.body.innerHTML = `
                         <div class="container" style="text-align: center; margin-top: 100px;">
@@ -375,7 +375,7 @@
                     salesList.innerHTML += `
                         <div class="sale-item">
                             <span>${order.orderNumber}: ${itemTitles} - <strong style="color:var(--bv-green)">R ${order.total.toFixed(2)}</strong></span>
-                            <button class="btn-small btn-edit" onclick="openTrackingModal('${docSnap.id}', '${order.status}', '${order.trackingNumber || ''}')">Update Tracking</button>
+                            <button class="btn-small btn-edit" onclick="openTrackingModal('${docSnap.id}', '${order.status}', '${order.trackingNumber || ''}', '${order.courier}')">Update Tracking</button>
                         </div>
                     `;
                 });
@@ -419,21 +419,20 @@
         }
 
         // --- TRACKING MODAL ---
-        window.openTrackingModal = function(id, currentStatus, currentTracking) {
+        window.openTrackingModal = function(id, currentStatus, currentTracking, currentCourier) {
             const newTracking = prompt("Enter Tracking Number (or leave blank if none):", currentTracking);
-            if (newTracking === null) return; // User cancelled
+            if (newTracking === null) return; 
             
             const newStatus = prompt("Enter Status (e.g., Processing, Shipped, Delivered):", currentStatus);
             if (newStatus === null) return;
 
-            updateDoc(doc(db, "products", id), {
+            updateDoc(doc(db, "orders", id), {
                 trackingNumber: newTracking,
                 status: newStatus
             }).then(() => {
                 showToast("Tracking Updated!");
-                loadDashboard(); // Refresh list
+                loadDashboard(); 
             }).catch(err => {
-                // Handle error
                 console.log(err);
             });
         }
