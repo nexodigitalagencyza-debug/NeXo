@@ -375,7 +375,7 @@
                     salesList.innerHTML += `
                         <div class="sale-item">
                             <span>${order.orderNumber}: ${itemTitles} - <strong style="color:var(--bv-green)">R ${order.total.toFixed(2)}</strong></span>
-                            <button class="btn-small btn-edit" onclick="openTrackingModal('${docSnap.id}', '${order.status}', '${order.trackingNumber || ''}', '${order.courier}')">Update Tracking</button>
+                            <button class="btn-small btn-edit" onclick="openTrackingModal('${docSnap.id}', '${order.status}', '${order.trackingNumber || ''}')">Update Tracking</button>
                         </div>
                     `;
                 });
@@ -419,7 +419,7 @@
         }
 
         // --- TRACKING MODAL ---
-        window.openTrackingModal = function(id, currentStatus, currentTracking, currentCourier) {
+        window.openTrackingModal = function(id, currentStatus, currentTracking) {
             const newTracking = prompt("Enter Tracking Number (or leave blank if none):", currentTracking);
             if (newTracking === null) return; 
             
@@ -698,7 +698,7 @@
 
         // --- CHAT LOGIC ---
         async function loadChatUsers() {
-            const q = query(collection(db, "messages"));
+            const q = query(collection(db, "chats"));
             const querySnapshot = await getDocs(q);
             
             const users = new Set();
@@ -707,12 +707,14 @@
             });
 
             const select = document.getElementById('chatUserSelect');
+            const currentVal = select.value;
             select.innerHTML = '<option value="">-- Choose a customer --</option>';
             
             users.forEach(email => {
                 const option = document.createElement('option');
                 option.value = email;
                 option.innerText = email;
+                if (email === currentVal) option.selected = true;
                 select.appendChild(option);
             });
         }
@@ -727,7 +729,7 @@
             currentChatUser = email;
             if (unsubscribeAdminChat) unsubscribeAdminChat();
 
-            const q = query(collection(db, "messages"), where("email", "==", email));
+            const q = query(collection(db, "chats"), where("email", "==", email));
             
             unsubscribeAdminChat = onSnapshot(q, (snapshot) => {
                 const container = document.getElementById('adminChatContainer');
@@ -761,7 +763,7 @@
             if (!text) return;
 
             try {
-                await addDoc(collection(db, "messages"), {
+                await addDoc(collection(db, "chats"), {
                     email: currentChatUser,
                     text: text,
                     sender: 'admin',
@@ -769,7 +771,8 @@
                 });
                 input.value = '';
             } catch (error) {
-                showToast("Error sending reply");
+                console.error("Admin send error:", error);
+                showToast("Error sending reply: " + error.message);
             }
         };
 
