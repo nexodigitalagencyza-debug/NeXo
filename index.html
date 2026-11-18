@@ -564,7 +564,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, addDoc, query, where, onSnapshot, doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
         const firebaseConfig = {
@@ -587,6 +587,19 @@
         let detailQuantity = 1;
         let cart = JSON.parse(localStorage.getItem('nexoCart')) || [];
         let currentUserEmail = null;
+
+        // --- LIVE VISITOR TRACKING ---
+        const sessionId = Math.random().toString(36).substring(2, 15);
+        
+        async function trackVisitor() {
+            const visitorRef = doc(db, "live_visitors", sessionId);
+            await setDoc(visitorRef, { lastActive: new Date().toISOString(), isAdmin: false });
+            
+            setInterval(async () => {
+                await setDoc(visitorRef, { lastActive: new Date().toISOString(), isAdmin: false });
+            }, 20000); 
+        }
+        trackVisitor();
 
         window.signInWithGoogle = function() {
             signInWithPopup(auth, provider)
@@ -1219,6 +1232,54 @@
                 console.error("Send error:", error);
                 showToast("Error sending message: " + error.message);
             }
+        };
+
+        // Decrement Stock after successful checkout
+        async function decrementStock(cartItems) {
+            for (let item of cartItems) {
+                // Find product by title (simplification for this setup)
+                const q = query(collection(db, "products"), where("title", "==", item.title));
+                const snap = await getDocs(q);
+                
+                if (!snap.empty) {
+                    const productDoc = snap.docs[0];
+                    const productData = productDoc.data();
+                    const currentStock = productData.stock || {};
+                    
+                    if (currentStock[item.size] !== undefined) {
+                        currentStock[item.size] -= item.quantity;
+                        if (currentStock[item.size] < 0) currentStock[item.size] = 0;
+                        
+                        await updateDoc(doc(db, "products", productDoc.id), {
+                            stock: currentStock
+                        });
+                    }
+                }
+            }
+        }
+
+        // Override processPayment to include stock decrement
+        const originalProcessPayment = window.processPayment;
+        window.processPayment = function() {
+            if (cart.length === 0) return;
+            
+            // ... (Validation logic from originalProcessPayment) ...
+            const email = document.getElementById('userEmail').value.trim();
+            const street = document.getElementById('userStreet').value.trim();
+            const city = document.getElementById('userCity').value.trim();
+            const postal = document.getElementById('userPostal').value.trim();
+            const courier = document.querySelector('input[name="courier"]:checked').value;
+
+            if (!email || !street || !city || !postal) {
+                showToast("Please fill in all delivery details");
+                return;
+            }
+
+            // Deduct stock first
+            decrementStock(cart).then(() => {
+                // Then run the original payment logic
+                originalProcessPayment();
+            });
         };
 
         fetchProducts();
