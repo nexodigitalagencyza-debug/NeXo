@@ -156,6 +156,7 @@
         .chat-input-group { display: flex; gap: 10px; }
         .chat-input-group input { flex: 1; padding: 15px; background: transparent; border: 1px solid #333; color: white; border-radius: 4px; outline: none; }
         .chat-input-group button { padding: 0 25px; background: var(--bv-green); color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .chat-input-group button:disabled { background: #333; cursor: not-allowed; }
 
         .side-menu { position: fixed; top: 0; left: -100%; width: 100%; height: 100vh; background-color: rgba(5, 5, 5, 0.98); backdrop-filter: blur(20px); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; transition: left 0.5s cubic-bezier(0.77, 0, 0.175, 1); overflow-y: auto; padding: 60px 0 40px; }
         .side-menu.open { left: 0; }
@@ -391,7 +392,7 @@
                 </div>
                 <div class="tracking-detail">
                     <span>Courier</span>
-                    <strong id="trackCourier">PEXI</strong>
+                    <strong id="trackCourier">The Courier Guy</strong>
                 </div>
             </div>
         </div>
@@ -405,8 +406,8 @@
                 <!-- Messages will load here -->
             </div>
             <div class="chat-input-group">
-                <input type="text" id="chatInput" placeholder="Type your message here...">
-                <button onclick="sendMessage()">Send</button>
+                <input type="text" id="chatInput" placeholder="Type your message here..." disabled>
+                <button onclick="sendMessage()" id="chatSendBtn" disabled>Send</button>
             </div>
         </div>
     </div>
@@ -607,6 +608,8 @@
             const emailDisplay = document.getElementById('userEmailDisplay');
             const signInBtn = document.getElementById('googleSignInBtn');
             const signOutBtn = document.getElementById('signOutBtn');
+            const chatInput = document.getElementById('chatInput');
+            const chatSendBtn = document.getElementById('chatSendBtn');
 
             if (user) {
                 currentUserEmail = user.email;
@@ -618,12 +621,25 @@
                 if (checkoutEmailInput) {
                     checkoutEmailInput.value = user.email;
                 }
+                
+                if (chatInput) {
+                    chatInput.disabled = false;
+                    chatInput.placeholder = "Type your message here...";
+                }
+                if (chatSendBtn) chatSendBtn.disabled = false;
+                
                 loadMessages();
             } else {
                 currentUserEmail = null;
                 emailDisplay.innerText = 'Not signed in';
                 signInBtn.style.display = 'block';
                 signOutBtn.style.display = 'none';
+                
+                if (chatInput) {
+                    chatInput.disabled = true;
+                    chatInput.placeholder = "Sign in to chat...";
+                }
+                if (chatSendBtn) chatSendBtn.disabled = true;
             }
         });
 
@@ -1122,7 +1138,6 @@
                     trackNumElement.innerText = order.trackingNumber;
                     trackNumElement.style.color = "var(--bv-green)";
                     
-                    // Create a clickable link based on the courier
                     let trackingUrl = "";
                     if (order.courier === "The Courier Guy") {
                         trackingUrl = `https://www.thecourierguy.co.za/tracking/?waybill=${order.trackingNumber}`;
@@ -1153,7 +1168,7 @@
 
             if (unsubscribeMessages) unsubscribeMessages(); 
 
-            const q = query(collection(db, "messages"), where("email", "==", currentUserEmail));
+            const q = query(collection(db, "chats"), where("email", "==", currentUserEmail));
             
             unsubscribeMessages = onSnapshot(q, (snapshot) => {
                 const container = document.getElementById('chatContainer');
@@ -1176,18 +1191,24 @@
                 });
                 
                 container.scrollTop = container.scrollHeight;
+            }, (error) => {
+                console.error("Chat error:", error);
+                document.getElementById('chatContainer').innerHTML = '<p style="text-align: center; color: #ff4d4d; margin-top: 20px;">Error loading messages.</p>';
             });
         };
 
         window.sendMessage = async function() {
-            if (!currentUserEmail) { showToast("Please sign in to send a message"); return; }
+            if (!currentUserEmail) { 
+                showToast("Please sign in to send a message"); 
+                return; 
+            }
             
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
             if (!text) return;
 
             try {
-                await addDoc(collection(db, "messages"), {
+                await addDoc(collection(db, "chats"), {
                     email: currentUserEmail,
                     text: text,
                     sender: 'customer',
@@ -1195,7 +1216,8 @@
                 });
                 input.value = '';
             } catch (error) {
-                showToast("Error sending message");
+                console.error("Send error:", error);
+                showToast("Error sending message: " + error.message);
             }
         };
 
