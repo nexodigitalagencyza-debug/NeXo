@@ -260,8 +260,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc, query, where, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        import { getDatabase, ref, onValue, set, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDc8RBSOsqaE2pt6Mu3ArKcTGHKf3z-vIs",
@@ -269,7 +270,8 @@
             projectId: "nexo-store-f602e",
             storageBucket: "nexo-store-f602e.firebasestorage.app",
             messagingSenderId: "1000078334258",
-            appId: "1:1000078334258:web:a6205893309b4ff6445f2b"
+            appId: "1:1000078334258:web:a6205893309b4ff6445f2b",
+            databaseURL: "https://nexo-store-f602e-default-rtdb.firebaseio.com" // ADD THIS LINE
         };
 
         const CLOUDINARY_CLOUD_NAME = "fznpolr3";
@@ -279,6 +281,7 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
+        const rtdb = getDatabase(app);
 
         let currentDrafts = JSON.parse(localStorage.getItem('nexoDrafts')) || [];
         let myChart = null;
@@ -361,27 +364,19 @@
         // --- LIVE VISITORS LOGIC ---
         async function startLiveVisitorTracking() {
             const sessionId = 'admin_' + Math.random().toString(36).substring(2, 9);
-            
-            const adminRef = doc(db, "live_visitors", sessionId);
-            await setDoc(adminRef, { lastActive: new Date().toISOString(), isAdmin: true });
-            
-            setInterval(async () => {
-                await setDoc(adminRef, { lastActive: new Date().toISOString(), isAdmin: true });
-            }, 20000);
+            const visitorRef = ref(rtdb, 'live_visitors/' + sessionId);
 
-            onSnapshot(collection(db, "live_visitors"), (snapshot) => {
-                const now = new Date();
-                let activeCount = 0;
-                
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const lastActive = new Date(data.lastActive);
-                    if ((now - lastActive) < 40000) {
-                        activeCount++;
+            set(visitorRef, { isAdmin: true, lastActive: serverTimestamp() });
+            onDisconnect(visitorRef).remove();
+
+            onValue(ref(rtdb, 'live_visitors'), (snapshot) => {
+                let customerCount = 0;
+                snapshot.forEach((childSnapshot) => {
+                    const data = childSnapshot.val();
+                    if (data.isAdmin === false) {
+                        customerCount++;
                     }
                 });
-
-                const customerCount = activeCount > 0 ? activeCount - 1 : 0;
                 document.getElementById('liveVisitorCount').innerText = customerCount;
             });
         }
