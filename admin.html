@@ -187,16 +187,6 @@
             <label>Old Price (R) - Leave blank if no discount</label>
             <input type="number" id="prodOldPrice" placeholder="400">
 
-            <label>Weight per Item (kg)</label>
-            <input type="number" id="prodWeight" placeholder="e.g. 0.5" step="0.1" min="0.1" value="0.5">
-
-            <label>Package Size Tier</label>
-            <select id="prodPackageSize">
-                <option value="small">Small (≤2kg / flyer)</option>
-                <option value="medium">Medium (≤10kg / parcel)</option>
-                <option value="large">Large (≤25kg / bulk)</option>
-            </select>
-
             <label>Product Images (Select Multiple)</label>
             <input type="file" id="prodImages" accept="image/*" multiple>
 
@@ -226,7 +216,10 @@
         </div>
 
         <div id="inventoryTab" class="tab-content">
-            <h3 style="margin-bottom: 20px;">Current Live Products</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; flex-wrap: wrap;">
+                <h3>Current Live Products</h3>
+                <button onclick="repairCategories()" class="btn-small" style="background: #f0ad4e; width: auto; padding: 10px 15px;">🔧 Repair Categories</button>
+            </div>
             <div class="product-list" id="adminProductList"></div>
         </div>
 
@@ -268,6 +261,8 @@
 
         const CLOUDINARY_CLOUD_NAME = "fznpolr3";
         const CLOUDINARY_UPLOAD_PRESET = "nexo_upload";
+
+        const VALID_CATEGORIES = ['Tops', 'Bottoms', 'Outerwear', 'Footwear', 'Accessories'];
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -540,7 +535,7 @@
                 const item = document.createElement('div');
                 item.className = 'draft-item';
                 item.innerHTML = `
-                    <span>${draft.title} - R${draft.price}</span>
+                    <span>${draft.title} - R${draft.price} [${draft.category || 'no cat'}]</span>
                     <div class="draft-actions">
                         <button class="btn-small btn-danger" onclick="removeDraft(${index})">Delete</button>
                     </div>
@@ -561,12 +556,15 @@
             const category = document.getElementById('prodCategory').value;
             const price = parseFloat(document.getElementById('prodPrice').value);
             const oldPrice = document.getElementById('prodOldPrice').value ? parseFloat(document.getElementById('prodOldPrice').value) : null;
-            const weight = parseFloat(document.getElementById('prodWeight').value) || 0.5;
-            const packageSize = document.getElementById('prodPackageSize').value;
             const thumbIndex = parseInt(document.getElementById('thumbnailIndex').value);
             const files = Array.from(document.getElementById('prodImages').files);
 
             if (!title || !price || files.length === 0) { showToast("Title, Price, and at least one Image are required for a draft."); return; }
+
+            if (!VALID_CATEGORIES.includes(category)) {
+                showToast("Invalid category. Pick one of: " + VALID_CATEGORIES.join(', '));
+                return;
+            }
 
             const stockInputs = document.querySelectorAll('.size-stock-input');
             let stockData = {};
@@ -583,7 +581,6 @@
 
             const draft = {
                 title, description, category, price, oldPrice, stock: stockData, 
-                weight, packageSize,
                 files: files, thumbIndex: thumbIndex
             };
 
@@ -603,6 +600,10 @@
                 try {
                     if (!draft.files || draft.files.length === 0) {
                         throw new Error(`Draft "${draft.title}" has no image files attached.`);
+                    }
+
+                    if (!VALID_CATEGORIES.includes(draft.category)) {
+                        throw new Error(`Draft "${draft.title}" has invalid category "${draft.category}". Allowed: ${VALID_CATEGORIES.join(', ')}`);
                     }
 
                     let imageUrls = [];
@@ -634,8 +635,7 @@
                     await addDoc(collection(db, "products"), {
                         title: draft.title, description: draft.description, category: draft.category, 
                         price: draft.price, oldPrice: draft.oldPrice, stock: draft.stock, 
-                        images: finalImages, feature: false,
-                        weight: draft.weight || 0.5, packageSize: draft.packageSize || 'small'
+                        images: finalImages, feature: false
                     });
                     
                 } catch (error) {
@@ -657,12 +657,15 @@
             const category = document.getElementById('prodCategory').value;
             const price = parseFloat(document.getElementById('prodPrice').value);
             const oldPrice = document.getElementById('prodOldPrice').value ? parseFloat(document.getElementById('prodOldPrice').value) : null;
-            const weight = parseFloat(document.getElementById('prodWeight').value) || 0.5;
-            const packageSize = document.getElementById('prodPackageSize').value;
             const thumbIndex = parseInt(document.getElementById('thumbnailIndex').value);
             const files = document.getElementById('prodImages').files;
 
             if (!title || !price) { showToast("Fill in Title and Price."); return; }
+
+            if (!VALID_CATEGORIES.includes(category)) {
+                showToast("Invalid category. Pick one of: " + VALID_CATEGORIES.join(', '));
+                return;
+            }
 
             const stockInputs = document.querySelectorAll('.size-stock-input');
             let stockData = {};
@@ -700,8 +703,7 @@
                     const productRef = doc(db, "products", editId);
                     const updateData = {
                         title: title, description: description, category: category, 
-                        price: price, oldPrice: oldPrice, stock: stockData,
-                        weight: weight, packageSize: packageSize
+                        price: price, oldPrice: oldPrice, stock: stockData
                     };
                     if (finalImages.length > 0) updateData.images = finalImages;
                     await updateDoc(productRef, updateData);
@@ -710,8 +712,7 @@
                     if (finalImages.length === 0) { showToast("Please upload an image for new products."); return; }
                     await addDoc(collection(db, "products"), {
                         title: title, description: description, category: category, price: price, 
-                        oldPrice: oldPrice, stock: stockData, images: finalImages, feature: false,
-                        weight: weight, packageSize: packageSize
+                        oldPrice: oldPrice, stock: stockData, images: finalImages, feature: false
                     });
                     showToast("Product Published!");
                 }
@@ -732,10 +733,13 @@
             
             querySnapshot.forEach((docSnap) => {
                 const prod = docSnap.data();
+                const catBadge = VALID_CATEGORIES.includes(prod.category) 
+                    ? `<span style="background: rgba(0,128,64,0.2); color: var(--bv-green); padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; margin-left: 8px;">${prod.category}</span>`
+                    : `<span style="background: rgba(255,77,77,0.2); color: #ff4d4d; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; margin-left: 8px;">⚠ ${prod.category || 'no category'}</span>`;
                 const div = document.createElement('div');
                 div.className = 'product-item';
                 div.innerHTML = `
-                    <span>${prod.title} - R${prod.price}</span>
+                    <span>${prod.title} - R${prod.price} ${catBadge}</span>
                     <div class="product-actions">
                         <button class="btn-small btn-edit" onclick="editProduct('${docSnap.id}')">Edit</button>
                         <button class="btn-small btn-danger" onclick="deleteProduct('${docSnap.id}')">Delete</button>
@@ -744,6 +748,36 @@
                 list.appendChild(div);
             });
         }
+
+        window.repairCategories = async function() {
+            const querySnapshot = await getDocs(collection(db, "products"));
+            const broken = [];
+            querySnapshot.forEach(docSnap => {
+                const prod = docSnap.data();
+                if (!VALID_CATEGORIES.includes(prod.category)) {
+                    broken.push({ id: docSnap.id, title: prod.title, currentCategory: prod.category || '(none)' });
+                }
+            });
+
+            if (broken.length === 0) {
+                showToast("All products have valid categories ✅");
+                return;
+            }
+
+            const list = broken.map(b => `- ${b.title} → current: "${b.currentCategory}"`).join('\n');
+            const response = confirm(
+                `Found ${broken.length} product(s) with invalid/missing category:\n\n${list}\n\nClick OK to assign them all to "Tops" (you can edit each one after).\nOr Cancel to do nothing.`
+            );
+
+            if (!response) return;
+
+            showToast(`Repairing ${broken.length} product(s)...`);
+            for (const b of broken) {
+                await updateDoc(doc(db, "products", b.id), { category: 'Tops' });
+            }
+            showToast(`✅ Repaired ${broken.length} product(s). Edit each to set correct category.`);
+            loadInventory();
+        };
 
         window.editProduct = async function(id) {
             const docRef = doc(db, "products", id);
@@ -760,11 +794,9 @@
                 document.getElementById('editId').value = id;
                 document.getElementById('prodTitle').value = data.title;
                 document.getElementById('prodDesc').value = data.description || "";
-                document.getElementById('prodCategory').value = data.category;
+                document.getElementById('prodCategory').value = VALID_CATEGORIES.includes(data.category) ? data.category : 'Tops';
                 document.getElementById('prodPrice').value = data.price;
                 document.getElementById('prodOldPrice').value = data.oldPrice || "";
-                document.getElementById('prodWeight').value = data.weight || 0.5;
-                document.getElementById('prodPackageSize').value = data.packageSize || 'small';
                 
                 updateSizeOptions(data.stock || null);
 
@@ -789,8 +821,7 @@
             document.getElementById('prodDesc').value = "";
             document.getElementById('prodPrice').value = "";
             document.getElementById('prodOldPrice').value = "";
-            document.getElementById('prodWeight').value = "0.5";
-            document.getElementById('prodPackageSize').value = "small";
+            document.getElementById('prodCategory').value = "Tops";
             document.getElementById('prodImages').value = "";
             updateSizeOptions();
             
