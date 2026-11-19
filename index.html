@@ -557,6 +557,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getFirestore, collection, getDocs, addDoc, query, where, onSnapshot, doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        import { getDatabase, ref, set, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDc8RBSOsqaE2pt6Mu3ArKcTGHKf3z-vIs",
@@ -564,13 +565,15 @@
             projectId: "nexo-store-f602e",
             storageBucket: "nexo-store-f602e.firebasestorage.app",
             messagingSenderId: "1000078334258",
-            appId: "1:1000078334258:web:a6205893309b4ff6445f2b"
+            appId: "1:1000078334258:web:a6205893309b4ff6445f2b",
+            databaseURL: "https://nexo-store-f602e-default-rtdb.firebaseio.com" // ADD THIS LINE
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
+        const rtdb = getDatabase(app);
 
         let products = [];
         let currentProduct = null;
@@ -583,12 +586,13 @@
         const sessionId = Math.random().toString(36).substring(2, 15);
         
         async function trackVisitor() {
-            const visitorRef = doc(db, "live_visitors", sessionId);
-            await setDoc(visitorRef, { lastActive: new Date().toISOString(), isAdmin: false });
+            const visitorRef = ref(rtdb, 'live_visitors/' + sessionId);
             
-            setInterval(async () => {
-                await setDoc(visitorRef, { lastActive: new Date().toISOString(), isAdmin: false });
-            }, 20000); 
+            // Set user as active
+            set(visitorRef, { isAdmin: false, lastActive: serverTimestamp() });
+            
+            // Instantly remove them when they close the tab
+            onDisconnect(visitorRef).remove();
         }
         trackVisitor();
 
