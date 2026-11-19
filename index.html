@@ -667,7 +667,7 @@
             products.forEach((p, index) => {
                 const card = document.createElement('div');
                 card.className = (document.getElementById('homeTitle').innerText === 'ALL PRODUCTS' && index === 0) ? 'product-card feature-card' : 'product-card';
-                card.onclick = () => showProduct(p.id);
+                card.onclick = () => { try { showProduct(p.id); } catch (e) { console.error(e); showToast('Could not open product: ' + e.message); } };
                 
                 const thumbImage = p.images && p.images.length > 0 ? p.images[0] : 'https://placehold.co/400x500/121212/f4f1ea?text=No+Image';
 
@@ -710,7 +710,7 @@
             filtered.forEach(p => {
                 const card = document.createElement('div');
                 card.className = 'product-card';
-                card.onclick = () => showProduct(p.id);
+                card.onclick = () => { try { showProduct(p.id); } catch (e) { console.error(e); showToast('Could not open product: ' + e.message); } };
                 
                 const thumbImage = p.images && p.images.length > 0 ? p.images[0] : 'https://placehold.co/400x500/121212/f4f1ea?text=No+Image';
                 const priceHTML = p.oldPrice 
@@ -772,7 +772,7 @@
             filtered.forEach((p, index) => {
                 const card = document.createElement('div');
                 card.className = (cat === 'all' && index === 0) ? 'product-card feature-card' : 'product-card';
-                card.onclick = () => showProduct(p.id);
+                card.onclick = () => { try { showProduct(p.id); } catch (e) { console.error(e); showToast('Could not open product: ' + e.message); } };
                 
                 const thumbImage = p.images && p.images.length > 0 ? p.images[0] : 'https://placehold.co/400x500/121212/f4f1ea?text=No+Image';
                 const priceHTML = p.oldPrice 
@@ -796,6 +796,7 @@
 
         window.showProduct = function(id) {
             currentProduct = products.find(p => p.id === id);
+            if (!currentProduct) { showToast('Product not found'); return; }
             selectedSize = null;
             detailQuantity = 1;
             document.getElementById('detailQuantity').innerText = detailQuantity;
@@ -828,22 +829,36 @@
             
             const sizesContainer = document.getElementById('detailSizes');
             sizesContainer.innerHTML = '';
-            sizesContainer.style.gridTemplateColumns = `repeat(${currentProduct.sizes.length > 4 ? 5 : 4}, 1fr)`;
 
-            currentProduct.sizes.forEach(size => {
-                const isDisabled = size.includes('_disabled');
-                const sizeText = size.replace('_disabled', '');
-                
-                const btn = document.createElement('div');
-                btn.className = isDisabled ? 'size-btn disabled' : 'size-btn';
-                btn.innerText = sizeText;
-                
-                if (!isDisabled) {
-                    btn.onclick = () => selectSize(btn);
-                }
-                
-                sizesContainer.appendChild(btn);
-            });
+            let sizeList = [];
+            if (Array.isArray(currentProduct.sizes) && currentProduct.sizes.length > 0) {
+                sizeList = currentProduct.sizes;
+            } else if (currentProduct.stock && typeof currentProduct.stock === 'object') {
+                sizeList = Object.keys(currentProduct.stock).map(size => {
+                    const qty = currentProduct.stock[size];
+                    return qty > 0 ? size : `${size}_disabled`;
+                });
+            }
+
+            if (sizeList.length === 0) {
+                sizesContainer.innerHTML = '<p style="grid-column: span 4; color: var(--text-muted); font-size: 0.85rem;">No sizes available for this product.</p>';
+            } else {
+                sizesContainer.style.gridTemplateColumns = `repeat(${sizeList.length > 4 ? 5 : 4}, 1fr)`;
+                sizeList.forEach(size => {
+                    const isDisabled = size.includes('_disabled');
+                    const sizeText = size.replace('_disabled', '');
+                    
+                    const btn = document.createElement('div');
+                    btn.className = isDisabled ? 'size-btn disabled' : 'size-btn';
+                    btn.innerText = sizeText;
+                    
+                    if (!isDisabled) {
+                        btn.onclick = () => selectSize(btn);
+                    }
+                    
+                    sizesContainer.appendChild(btn);
+                });
+            }
             
             showPage('product');
         }
