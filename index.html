@@ -122,8 +122,8 @@
         .summary-row { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 0.9rem; color: var(--text-muted); }
         .summary-total { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 20px; border-top: 1px solid #333; font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; color: var(--text-cream); }
         
-        .checkout-form input[type="text"], .checkout-form input[type="email"] { width: 100%; padding: 12px; background-color: transparent; border: 1px solid #333; color: var(--text-cream); font-family: 'Inter', sans-serif; font-size: 0.9rem; margin-bottom: 15px; outline: none; }
-        .checkout-form input[type="text"]:focus, .checkout-form input[type="email"]:focus { border-color: var(--bv-green); }
+        .checkout-form input[type="text"], .checkout-form input[type="email"], .checkout-form input[type="tel"] { width: 100%; padding: 12px; background-color: transparent; border: 1px solid #333; color: var(--text-cream); font-family: 'Inter', sans-serif; font-size: 0.9rem; margin-bottom: 15px; outline: none; }
+        .checkout-form input[type="text"]:focus, .checkout-form input[type="email"]:focus, .checkout-form input[type="tel"]:focus { border-color: var(--bv-green); }
         .courier-options { display: flex; gap: 20px; margin-bottom: 25px; margin-top: 5px; }
         .courier-radio { font-size: 0.9rem; display: flex; align-items: center; gap: 8px; cursor: pointer; }
         .courier-radio input { accent-color: var(--bv-green); width: 16px; height: 16px; }
@@ -133,7 +133,6 @@
         .shop-now-btn { display: block; text-align: center; width: 100%; padding: 20px; background-color: var(--bv-green); color: #fff; border: none; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; transition: 0.3s; margin-top: 20px; }
         .empty-cart { text-align: center; color: var(--text-muted); margin-top: 50px; font-size: 0.9rem; }
 
-        /* TRACKING PAGE STYLES */
         .tracking-view { padding: 50px 20px; max-width: 500px; margin: 0 auto; text-align: center; }
         .tracking-view h1 { font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 20px; }
         .tracking-input-group { display: flex; gap: 10px; margin-bottom: 30px; }
@@ -146,7 +145,6 @@
         .tracking-detail span { color: var(--text-muted); display: block; font-size: 0.8rem; }
         .tracking-link { color: var(--bv-green); text-decoration: underline; font-weight: bold; }
 
-        /* MESSAGING PAGE STYLES */
         .message-view { padding: 30px 20px; max-width: 600px; margin: 0 auto; height: 80vh; display: flex; flex-direction: column; }
         .message-view h1 { font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 20px; border-bottom: 1px solid #222; padding-bottom: 10px; }
         .chat-container { flex: 1; overflow-y: auto; border: 1px solid #333; background: var(--bg-card); border-radius: 8px; padding: 15px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
@@ -223,7 +221,6 @@
 
     <div id="toastMessage" class="luxury-toast"></div>
 
-    <!-- FORCED WELCOME POPUP -->
     <div id="welcomePopup" class="welcome-popup-overlay">
         <div class="welcome-popup">
             <h2>Welcome to NeXo</h2>
@@ -332,28 +329,56 @@
             
             <div class="cart-summary" id="cartSummary" style="display: none;">
                 <div class="summary-row"><span>Subtotal</span><span id="subtotalText">R 0.00</span></div>
-                <div class="summary-row"><span>Shipping</span><span>R 140.00</span></div>
+                <div class="summary-row"><span>Shipping</span><span id="summaryShipping">R 0.00</span></div>
                 <div class="summary-total"><span>Total</span><span id="totalText">R 0.00</span></div>
 
                 <div class="checkout-form">
                     <h3 style="font-family: 'Playfair Display', serif; font-size: 1.2rem; margin-bottom: 15px; margin-top: 30px;">Delivery Details</h3>
                     
-                    <label style="font-size: 0.8rem; color: var(--text-muted);">Email Address</label>
+                    <label style="font-size: 0.8rem; color: var(--text-muted);">Full Name *</label>
+                    <input type="text" id="userName" placeholder="Recipient full name" required>
+
+                    <label style="font-size: 0.8rem; color: var(--text-muted);">Phone Number *</label>
+                    <input type="tel" id="userPhone" placeholder="e.g. 0821234567" required>
+
+                    <label style="font-size: 0.8rem; color: var(--text-muted);">Email Address *</label>
                     <input type="email" id="userEmail" placeholder="you@example.com" required>
 
-                    <label style="font-size: 0.8rem; color: var(--text-muted);">Street Name & House Number</label>
+                    <label style="font-size: 0.8rem; color: var(--text-muted);">Street Address *</label>
                     <input type="text" id="userStreet" placeholder="123 Main Street" required>
 
-                    <label style="font-size: 0.8rem; color: var(--text-muted);">Suburb / Town / City</label>
+                    <label style="font-size: 0.8rem; color: var(--text-muted);">Suburb *</label>
+                    <input type="text" id="userSuburb" placeholder="e.g. Bedfordview" required>
+
+                    <label style="font-size: 0.8rem; color: var(--text-muted);">City *</label>
                     <input type="text" id="userCity" placeholder="Johannesburg" required>
 
-                    <label style="font-size: 0.8rem; color: var(--text-muted);">Postal Code</label>
+                    <label style="font-size: 0.8rem; color: var(--text-muted);">Province *</label>
+                    <select id="userProvince" required style="width:100%; padding:12px; background:transparent; border:1px solid #333; color:var(--text-cream); margin-bottom:15px; font-family:'Inter',sans-serif;">
+                        <option value="">Select province</option>
+                        <option>Gauteng</option>
+                        <option>Free State</option>
+                        <option>Western Cape</option>
+                        <option>KwaZulu-Natal</option>
+                        <option>Eastern Cape</option>
+                        <option>Limpopo</option>
+                        <option>Mpumalanga</option>
+                        <option>North West</option>
+                        <option>Northern Cape</option>
+                    </select>
+
+                    <label style="font-size: 0.8rem; color: var(--text-muted);">Postal Code *</label>
                     <input type="text" id="userPostal" placeholder="2001" required>
 
                     <label style="font-size: 0.8rem; color: var(--text-muted); margin-top: 15px;">Select Courier</label>
                     <div class="courier-options">
-                        <label class="courier-radio"><input type="radio" name="courier" value="The Courier Guy" checked> The Courier Guy</label>
-                        <label class="courier-radio"><input type="radio" name="courier" value="Fastway"> Fastway</label>
+                        <label class="courier-radio"><input type="radio" name="courier" value="The Courier Guy" checked onchange="updateShippingFee()"> The Courier Guy</label>
+                        <label class="courier-radio"><input type="radio" name="courier" value="Fastway" onchange="updateShippingFee()"> Fastway</label>
+                    </div>
+
+                    <div id="shippingFeeDisplay" style="padding:12px; background:#1a1a1a; border:1px solid #333; border-radius:4px; margin-bottom:15px; display:flex; justify-content:space-between; font-size:0.9rem;">
+                        <span>Calculated Shipping</span>
+                        <strong id="shippingAmount" style="color:var(--bv-green);">R 0.00</strong>
                     </div>
 
                     <button class="checkout-btn" onclick="processPayment()">Secure Checkout</button>
@@ -367,7 +392,6 @@
         </div>
     </div>
 
-    <!-- TRACKING PAGE -->
     <div id="view-track" class="page-view">
         <div class="tracking-view">
             <h1>Track Your Order</h1>
@@ -396,12 +420,10 @@
         </div>
     </div>
 
-    <!-- MESSAGES PAGE -->
     <div id="view-messages" class="page-view">
         <div class="message-view">
             <h1>Messages</h1>
             <div class="chat-container" id="chatContainer">
-                <!-- Messages will load here -->
             </div>
             <div class="chat-input-group">
                 <input type="text" id="chatInput" placeholder="Type your message here..." disabled>
@@ -566,7 +588,7 @@
             storageBucket: "nexo-store-f602e.firebasestorage.app",
             messagingSenderId: "1000078334258",
             appId: "1:1000078334258:web:a6205893309b4ff6445f2b",
-            databaseURL: "https://nexo-store-f602e-default-rtdb.firebaseio.com" // ADD THIS LINE
+            databaseURL: "https://nexo-store-f602e-default-rtdb.firebaseio.com"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -582,16 +604,11 @@
         let cart = JSON.parse(localStorage.getItem('nexoCart')) || [];
         let currentUserEmail = null;
 
-        // --- LIVE VISITOR TRACKING ---
         const sessionId = Math.random().toString(36).substring(2, 15);
         
         async function trackVisitor() {
             const visitorRef = ref(rtdb, 'live_visitors/' + sessionId);
-            
-            // Set user as active
             set(visitorRef, { isAdmin: false, lastActive: serverTimestamp() });
-            
-            // Instantly remove them when they close the tab
             onDisconnect(visitorRef).remove();
         }
         trackVisitor();
@@ -620,7 +637,7 @@
             const welcomePopup = document.getElementById('welcomePopup');
 
             if (user) {
-                welcomePopup.classList.remove('active'); // Hide popup if logged in
+                welcomePopup.classList.remove('active');
                 
                 currentUserEmail = user.email;
                 emailDisplay.innerText = user.email;
@@ -640,7 +657,7 @@
                 
                 loadMessages();
             } else {
-                welcomePopup.classList.add('active'); // Force popup if not logged in
+                welcomePopup.classList.add('active');
                 
                 currentUserEmail = null;
                 emailDisplay.innerText = 'Not signed in';
@@ -655,7 +672,6 @@
             }
         });
 
-        // --- PRODUCT LOGIC ---
         async function fetchProducts() {
             const querySnapshot = await getDocs(collection(db, "products"));
             products = [];
@@ -963,7 +979,9 @@
                 price: currentProduct.price,
                 size: selectedSize,
                 image: thumbImage,
-                quantity: detailQuantity
+                quantity: detailQuantity,
+                weight: currentProduct.weight || 0.5,
+                packageSize: currentProduct.packageSize || 'small'
             });
 
             saveCart();
@@ -1012,7 +1030,7 @@
             });
 
             document.getElementById('subtotalText').innerText = `R ${subtotal.toFixed(2)}`;
-            document.getElementById('totalText').innerText = `R ${(subtotal + 140).toFixed(2)}`;
+            updateShippingFee();
             updateCartIcon();
         }
 
@@ -1035,28 +1053,80 @@
             updateCartIcon();
         }
 
+        const RATE_TABLE = {
+            'The Courier Guy': {
+                small:  { base: 95,  maxKg: 2,  perKg: 0 },
+                medium: { base: 120, maxKg: 10, perKg: 0 },
+                large:  { base: 175, maxKg: 25, perKg: 7 }
+            },
+            'Fastway': {
+                small:  { base: 85,  maxKg: 5,  perKg: 0 },
+                medium: { base: 110, maxKg: 10, perKg: 0 },
+                large:  { base: 150, maxKg: 20, perKg: 0 }
+            }
+        };
+
+        window.calculateShipping = function() {
+            if (cart.length === 0) return 0;
+            const courierRadio = document.querySelector('input[name="courier"]:checked');
+            const courier = courierRadio ? courierRadio.value : 'The Courier Guy';
+
+            const totalWeight = cart.reduce((sum, item) => {
+                const w = item.weight || 0.5;
+                return sum + (w * item.quantity);
+            }, 0);
+
+            let tier = 'small';
+            if (totalWeight > 10) tier = 'large';
+            else if (totalWeight > 2) tier = 'medium';
+
+            const rate = RATE_TABLE[courier][tier];
+            let fee = rate.base;
+            if (totalWeight > rate.maxKg && rate.perKg > 0) {
+                fee += (totalWeight - rate.maxKg) * rate.perKg;
+            }
+            return Math.round(fee);
+        };
+
+        window.updateShippingFee = function() {
+            const fee = calculateShipping();
+            const subtotal = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+            
+            const summaryShippingEl = document.getElementById('summaryShipping');
+            const totalTextEl = document.getElementById('totalText');
+            const shippingAmountEl = document.getElementById('shippingAmount');
+            
+            if (summaryShippingEl) summaryShippingEl.innerText = `R ${fee.toFixed(2)}`;
+            if (totalTextEl) totalTextEl.innerText = `R ${(subtotal + fee).toFixed(2)}`;
+            if (shippingAmountEl) shippingAmountEl.innerText = `R ${fee.toFixed(2)}`;
+        };
+
         window.updateCartIcon = function() {
             let totalItems = cart.reduce((total, item) => total + item.quantity, 0);
             document.getElementById('cartCount').innerText = totalItems;
         }
 
-        // --- PAYFAST CHECKOUT ---
         window.processPayment = function() {
             if (cart.length === 0) return;
 
+            const name = document.getElementById('userName').value.trim();
+            const phone = document.getElementById('userPhone').value.trim();
             const email = document.getElementById('userEmail').value.trim();
             const street = document.getElementById('userStreet').value.trim();
+            const suburb = document.getElementById('userSuburb').value.trim();
             const city = document.getElementById('userCity').value.trim();
+            const province = document.getElementById('userProvince').value;
             const postal = document.getElementById('userPostal').value.trim();
             const courier = document.querySelector('input[name="courier"]:checked').value;
 
-            if (!email || !street || !city || !postal) {
+            if (!name || !phone || !email || !street || !suburb || !city || !province || !postal) {
                 showToast("Please fill in all delivery details");
                 return;
             }
 
-            let subtotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-            const total = subtotal + 140;
+            const subtotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+            const shipping = calculateShipping();
+            const total = subtotal + shipping;
             
             const randomNumbers = Math.floor(10000 + Math.random() * 90000);
             const orderNumber = `NXO${randomNumbers}`;
@@ -1064,13 +1134,17 @@
             try {
                 addDoc(collection(db, "orders"), {
                     orderNumber: orderNumber,
+                    name: name,
+                    phone: phone,
                     email: email,
                     street: street,
+                    suburb: suburb,
                     city: city,
+                    province: province,
                     postal: postal,
                     courier: courier,
                     subtotal: subtotal,
-                    shipping: 140,
+                    shipping: shipping,
                     total: total,
                     items: cart,
                     date: new Date().toISOString(),
@@ -1098,7 +1172,7 @@
                 merchant_key: payfastMerchantKey,
                 return_url: window.location.origin + '/index.html', 
                 cancel_url: window.location.origin + '/index.html', 
-                name_first: "Customer",
+                name_first: name,
                 email_address: email,
                 m_payment_id: orderNumber,
                 amount: total.toFixed(2),
@@ -1124,7 +1198,51 @@
             saveCart();
         }
 
-        // --- TRACKING LOGIC ---
+        async function decrementStock(cartItems) {
+            for (let item of cartItems) {
+                const q = query(collection(db, "products"), where("title", "==", item.title));
+                const snap = await getDocs(q);
+                
+                if (!snap.empty) {
+                    const productDoc = snap.docs[0];
+                    const productData = productDoc.data();
+                    const currentStock = productData.stock || {};
+                    
+                    if (currentStock[item.size] !== undefined) {
+                        currentStock[item.size] -= item.quantity;
+                        if (currentStock[item.size] < 0) currentStock[item.size] = 0;
+                        
+                        await updateDoc(doc(db, "products", productDoc.id), {
+                            stock: currentStock
+                        });
+                    }
+                }
+            }
+        }
+
+        const originalProcessPayment = window.processPayment;
+        window.processPayment = function() {
+            if (cart.length === 0) return;
+            
+            const name = document.getElementById('userName').value.trim();
+            const phone = document.getElementById('userPhone').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            const street = document.getElementById('userStreet').value.trim();
+            const suburb = document.getElementById('userSuburb').value.trim();
+            const city = document.getElementById('userCity').value.trim();
+            const province = document.getElementById('userProvince').value;
+            const postal = document.getElementById('userPostal').value.trim();
+
+            if (!name || !phone || !email || !street || !suburb || !city || !province || !postal) {
+                showToast("Please fill in all delivery details");
+                return;
+            }
+
+            decrementStock(cart).then(() => {
+                originalProcessPayment();
+            });
+        };
+
         window.trackOrder = async function() {
             const input = document.getElementById('trackOrderInput').value.trim().toUpperCase();
             if (!input) { showToast("Please enter an order number"); return; }
@@ -1169,7 +1287,6 @@
             document.getElementById('trackingResult').classList.add('active');
         }
 
-        // --- MESSAGING LOGIC ---
         let unsubscribeMessages = null;
 
         window.loadMessages = function() {
@@ -1231,49 +1348,6 @@
                 console.error("Send error:", error);
                 showToast("Error sending message: " + error.message);
             }
-        };
-
-        // Decrement Stock after successful checkout
-        async function decrementStock(cartItems) {
-            for (let item of cartItems) {
-                const q = query(collection(db, "products"), where("title", "==", item.title));
-                const snap = await getDocs(q);
-                
-                if (!snap.empty) {
-                    const productDoc = snap.docs[0];
-                    const productData = productDoc.data();
-                    const currentStock = productData.stock || {};
-                    
-                    if (currentStock[item.size] !== undefined) {
-                        currentStock[item.size] -= item.quantity;
-                        if (currentStock[item.size] < 0) currentStock[item.size] = 0;
-                        
-                        await updateDoc(doc(db, "products", productDoc.id), {
-                            stock: currentStock
-                        });
-                    }
-                }
-            }
-        }
-
-        // Override processPayment to include stock decrement
-        const originalProcessPayment = window.processPayment;
-        window.processPayment = function() {
-            if (cart.length === 0) return;
-            
-            const email = document.getElementById('userEmail').value.trim();
-            const street = document.getElementById('userStreet').value.trim();
-            const city = document.getElementById('userCity').value.trim();
-            const postal = document.getElementById('userPostal').value.trim();
-
-            if (!email || !street || !city || !postal) {
-                showToast("Please fill in all delivery details");
-                return;
-            }
-
-            decrementStock(cart).then(() => {
-                originalProcessPayment();
-            });
         };
 
         fetchProducts();
