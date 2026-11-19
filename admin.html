@@ -304,6 +304,15 @@
                 });
         };
 
+        window.signInWithGoogle = function() {
+            signInWithPopup(auth, provider)
+                .then((result) => {
+                    showToast(`Welcome ${result.user.displayName || result.user.email}`);
+                }).catch((error) => {
+                    showToast("Error: " + error.message);
+                });
+        };
+
         window.logoutUser = function() {
             signOut(auth).then(() => {
                 showToast("Logged out");
@@ -353,16 +362,13 @@
         async function startLiveVisitorTracking() {
             const sessionId = 'admin_' + Math.random().toString(36).substring(2, 9);
             
-            // Set admin as active
             const adminRef = doc(db, "live_visitors", sessionId);
             await setDoc(adminRef, { lastActive: new Date().toISOString(), isAdmin: true });
             
-            // Heartbeat every 20 seconds
             setInterval(async () => {
                 await setDoc(adminRef, { lastActive: new Date().toISOString(), isAdmin: true });
             }, 20000);
 
-            // Listen to all visitors
             onSnapshot(collection(db, "live_visitors"), (snapshot) => {
                 const now = new Date();
                 let activeCount = 0;
@@ -370,13 +376,11 @@
                 snapshot.forEach((doc) => {
                     const data = doc.data();
                     const lastActive = new Date(data.lastActive);
-                    // If active in the last 40 seconds, count them
                     if ((now - lastActive) < 40000) {
                         activeCount++;
                     }
                 });
 
-                // Subtract 1 for the admin themselves
                 const customerCount = activeCount > 0 ? activeCount - 1 : 0;
                 document.getElementById('liveVisitorCount').innerText = customerCount;
             });
